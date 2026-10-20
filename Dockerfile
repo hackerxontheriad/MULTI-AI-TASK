@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies required for Playwright browsers
+# Install system dependencies required for Playwright (Cleaned for newer Debian versions)
 RUN apt-get update && apt-get install -y \
     libnss3 \
     libnspr4 \
@@ -14,11 +14,8 @@ RUN apt-get update && apt-get install -y \
     libexpat1 \
     libfontconfig1 \
     libgbm1 \
-    libgconf-2-4 \
-    libgdk-pixbuf2.0-0 \
     libglib2.0-0 \
     libgtk-3-0 \
-    libnspr4 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libx11-6 \
@@ -36,7 +33,6 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     ca-certificates \
     fonts-liberation \
-    libappindicator3-1 \
     libasound2 \
     libgbm-dev \
     wget \
