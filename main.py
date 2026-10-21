@@ -7,12 +7,11 @@ import json
 import os
 import requests
 import g4f
+from g4f.Provider import DuckDuckGo, Blackbox, DeepSeek
 import asyncio
 
-# FastAPI App Initialization
-app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.3")
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.4")
 
-# Local Storage setup for generated videos
 VIDEO_DIR = "generated_videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 app.mount("/static/videos", StaticFiles(directory=VIDEO_DIR), name="videos")
@@ -33,7 +32,6 @@ class VideoRequest(BaseModel):
     model: Optional[str] = "veo-flow"
     aspect_ratio: Optional[str] = "16:9"
 
-# Supported Chat Models Mapping
 CHAT_MODEL_MAPPING = {
     "chatgpt": "gpt-4o",
     "gemini": "gemini-pro",
@@ -44,7 +42,6 @@ CHAT_MODEL_MAPPING = {
     "perplexity": "sonar"
 }
 
-# Video Sources Mapping
 VIDEO_MODEL_SOURCES = {
     "veo-flow": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     "runway-gen3": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
@@ -53,21 +50,8 @@ VIDEO_MODEL_SOURCES = {
 
 @app.get("/")
 def home():
-    return {
-        "status": "online",
-        "server": "MadEx Master AI & Media Engine",
-        "supported_chat_models": list(CHAT_MODEL_MAPPING.keys()),
-        "supported_video_models": list(VIDEO_MODEL_SOURCES.keys())
-    }
+    return {"status": "online", "server": "MadEx Master AI Engine"}
 
-@app.get("/v1/models")
-def list_models():
-    return {
-        "chat_models": list(CHAT_MODEL_MAPPING.keys()),
-        "video_models": list(VIDEO_MODEL_SOURCES.keys())
-    }
-
-# Universal Chat Endpoint with REAL Provider Calls (No Fake Fallback)
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
     model_key = req.model.lower()
@@ -76,7 +60,6 @@ async def chat_completions(req: ChatRequest):
 
     async def stream_generator():
         try:
-            # 1. Live "Thinking..." Effect
             thinking_data = {
                 "choices": [{
                     "delta": {"content": f"🧠 [{req.model.upper()} Thinking...]\n"},
@@ -86,25 +69,36 @@ async def chat_completions(req: ChatRequest):
             yield f"data: {json.dumps(thinking_data)}\n\n"
             await asyncio.sleep(0.3)
 
-            # 2. Fetching REAL Response from g4f Providers (Non-blocking)
-            def call_g4f_real():
-                return g4f.ChatCompletion.create(
-                    model=target_model,
-                    messages=formatted_messages,
-                    stream=False
-                )
-            
+            def call_g4f_robust():
+                # Try with specific reliable providers first to avoid browser/quota issues
+                providers_to_try = [DuckDuckGo, Blackbox, DeepSeek, None]
+                for prov in providers_to_try:
+                    try:
+                        if prov:
+                            res = g4f.ChatCompletion.create(
+                                model=target_model,
+                                messages=formatted_messages,
+                                provider=prov,
+                                stream=False
+                            )
+                        else:
+                            res = g4f.ChatCompletion.create(
+                                model=target_model,
+                                messages=formatted_messages,
+                                stream=False
+                            )
+                        if res and len(str(res).strip()) > 0:
+                            return str(res)
+                    except Exception:
+                        continue
+                raise Exception("All providers exhausted or rate-limited.")
+
             real_output = ""
             try:
-                response = await asyncio.to_thread(call_g4f_real)
-                if response:
-                    real_output = str(response)
-                else:
-                    real_output = "⚠️ [Real Provider returned empty response]"
-            except Exception as provider_err:
-                real_output = f"❌ [Real Provider Error: {str(provider_err)}]"
+                real_output = await asyncio.to_thread(call_g4f_robust)
+            except Exception as e:
+                real_output = f"⚠️ [Provider busy, please retry. Details: {str(e)[:50]}]"
 
-            # 3. Stream the real response word by word
             for word in real_output.split():
                 chunk_data = {
                     "choices": [{
@@ -123,7 +117,6 @@ async def chat_completions(req: ChatRequest):
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
-# Dynamic Video Generation Endpoint
 @app.post("/v1/video/generate")
 async def generate_video(request: Request, req: VideoRequest):
     try:
@@ -158,6 +151,5 @@ async def generate_video(request: Request, req: VideoRequest):
             "player_ready_url": public_video_url,
             "message": "Video generated successfully!"
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
