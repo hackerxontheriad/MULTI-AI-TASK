@@ -2,7 +2,6 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Basic build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
@@ -11,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Automatically install all correct system dependencies for Playwright chromium
+# Playwright dependencies agar zaroori hain toh
 RUN playwright install-deps chromium
 RUN playwright install chromium
 
