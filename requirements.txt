@@ -3,3 +3,4 @@ uvicorn
 pydantic
 g4f
 requests
+playwright
