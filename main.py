@@ -9,7 +9,7 @@ import requests
 import g4f
 import asyncio
 
-app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.5")
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.7")
 
 VIDEO_DIR = "generated_videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
@@ -49,7 +49,7 @@ VIDEO_MODEL_SOURCES = {
 
 @app.get("/")
 def home():
-    return {"status": "online", "server": "MadEx Master AI Engine"}
+    return {"status": "online", "server": "MadEx Playwright-Powered AI Engine"}
 
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
@@ -68,8 +68,8 @@ async def chat_completions(req: ChatRequest):
             yield f"data: {json.dumps(thinking_data)}\n\n"
             await asyncio.sleep(0.3)
 
-            def call_g4f_direct():
-                # g4f automatically handles the best working provider without manual imports
+            def call_g4f_with_playwright():
+                # Full g4f execution allowing browser/playwright providers
                 return g4f.ChatCompletion.create(
                     model=target_model,
                     messages=formatted_messages,
@@ -78,13 +78,13 @@ async def chat_completions(req: ChatRequest):
 
             real_output = ""
             try:
-                response = await asyncio.to_thread(call_g4f_direct)
+                response = await asyncio.to_thread(call_g4f_with_playwright)
                 if response:
                     real_output = str(response)
                 else:
                     real_output = "⚠️ [Provider returned empty response]"
             except Exception as e:
-                real_output = f"❌ [Provider Error: {str(e)[:80]}]"
+                real_output = f"❌ [Playwright/Provider Error: {str(e)[:120]}]"
 
             for word in real_output.split():
                 chunk_data = {
