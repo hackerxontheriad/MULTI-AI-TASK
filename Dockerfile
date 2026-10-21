@@ -2,7 +2,11 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# 1. Install system dependencies required for Playwright/Chromium on Linux
+# Set environment variables for Playwright to install globally
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System dependencies for Chromium & Playwright
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
@@ -29,9 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Install Playwright browser and system dependencies properly
-RUN playwright install-deps chromium
-RUN playwright install chromium
+# Install Playwright browser globally in the specified path
+RUN playwright install --with-deps chromium
 
 COPY . .
 
