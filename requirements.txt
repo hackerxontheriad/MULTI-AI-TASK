@@ -1,5 +1,4 @@
 fastapi
 uvicorn
-g4f
 playwright
 pydantic
