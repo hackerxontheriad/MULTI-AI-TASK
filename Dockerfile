@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Playwright dependencies agar zaroori hain toh
+# Ab playwright command yahan successfully chal jayegi kyunki woh upar install ho chuka hai
 RUN playwright install-deps chromium
 RUN playwright install chromium
 
