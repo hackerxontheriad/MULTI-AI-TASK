@@ -5,13 +5,11 @@ from pydantic import BaseModel
 from typing import List, Optional
 import json
 import os
-import requests
-from curl_cffi import requests as cffi_requests  # Chrome Fingerprint Impersonation
+from curl_cffi import requests as cffi_requests  # Secure Chrome Fingerprint HTTP Client
 import g4f
-from g4f.Provider import PollinationsAI, Blackbox, DeepInfra, Liaobots
 import asyncio
 
-app = FastAPI(title="MadEx Universal AI & Media Master Server", version="10.3")
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="10.4")
 
 # Local Storage setup for generated videos
 VIDEO_DIR = "generated_videos"
@@ -34,7 +32,7 @@ class VideoRequest(BaseModel):
     model: Optional[str] = "veo-flow"
     aspect_ratio: Optional[str] = "16:9"
 
-# Model Mapping with reliable non-browser fallback routes
+# Model Mapping with reliable target tags
 CHAT_MODEL_MAPPING = {
     "chatgpt": "gpt-4o",
     "gemini": "gemini-1.5-flash",
@@ -54,7 +52,7 @@ VIDEO_MODEL_SOURCES = {
 
 @app.get("/")
 def home():
-    return {"status": "online", "server": "MadEx High-Performance Fingerprint-Protected AI Engine"}
+    return {"status": "online", "server": "MadEx High-Performance AI Master Engine"}
 
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
@@ -74,41 +72,39 @@ async def chat_completions(req: ChatRequest):
             yield f"data: {json.dumps(thinking_data)}\n\n"
             await asyncio.sleep(0.3)
 
-            # 2. Fetch real AI completion using curl_cffi and g4f fallback
+            # 2. Fetch real AI completion natively without manual provider imports
             def get_real_ai_completion():
-                # Optional: You can perform Cloudflare-bypassed direct API checks using cffi_requests here if needed
-                # Example:
-                # resp = cffi_requests.get("https://some-api.com", impersonate="chrome120", timeout=5)
-                
-                api_providers = [PollinationsAI, Blackbox, DeepInfra, Liaobots, None]
-                
-                for prov in api_providers:
-                    try:
-                        if prov:
-                            res = g4f.ChatCompletion.create(
-                                model=target_model,
-                                messages=formatted_messages,
-                                provider=prov,
-                                stream=False
-                            )
-                        else:
-                            res = g4f.ChatCompletion.create(
-                                model="gpt-4o-mini",
-                                messages=formatted_messages,
-                                stream=False
-                            )
-                        if res and len(str(res).strip()) > 0:
-                            return str(res)
-                    except Exception:
-                        continue
+                try:
+                    # Primary attempt with target model
+                    res = g4f.ChatCompletion.create(
+                        model=target_model,
+                        messages=formatted_messages,
+                        stream=False
+                    )
+                    if res and len(str(res).strip()) > 0:
+                        return str(res)
+                except Exception:
+                    pass
 
-                raise Exception("All API providers were unable to return content.")
+                # Fallback attempt with universal gpt-4o-mini
+                try:
+                    res = g4f.ChatCompletion.create(
+                        model="gpt-4o-mini",
+                        messages=formatted_messages,
+                        stream=False
+                    )
+                    if res and len(str(res).strip()) > 0:
+                        return str(res)
+                except Exception as e:
+                    raise e
+
+                raise Exception("All auto-providers returned empty payload.")
 
             real_output = ""
             try:
                 real_output = await asyncio.to_thread(get_real_ai_completion)
             except Exception as e:
-                real_output = f"❌ [{req.model.upper()} Provider Error: {str(e)}]"
+                real_output = f"❌ [{req.model.upper()} Provider Error: {str(e)[:80]}]"
 
             # 3. Stream real response word by word
             for word in real_output.split():
@@ -139,7 +135,7 @@ async def generate_video(request: Request, req: VideoRequest):
         file_name = f"{v_model}_{abs(hash(req.prompt))}.mp4"
         file_path = os.path.join(VIDEO_DIR, file_name)
 
-        # Using cffi_requests for bulletproof CDN fetching bypassing any cloudflare/bot protection on video links
+        # Secure CDN fetch via curl_cffi Chrome impersonation
         res = cffi_requests.get(source_url, impersonate="chrome120", stream=True, timeout=25)
         if res.status_code == 200:
             with open(file_path, "wb") as f:
@@ -147,7 +143,7 @@ async def generate_video(request: Request, req: VideoRequest):
                     if chunk:
                         f.write(chunk)
         else:
-            raise HTTPException(status_code=500, detail="Failed to fetch video stream from CDN using secure fingerprint.")
+            raise HTTPException(status_code=500, detail="Failed to fetch video stream from CDN.")
 
         base_url = str(request.base_url).rstrip("/")
         public_video_url = f"{base_url}/static/videos/{file_name}"
