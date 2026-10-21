@@ -7,10 +7,9 @@ import json
 import os
 import requests
 import g4f
-from g4f.Provider import DuckDuckGo, Blackbox, DeepSeek
 import asyncio
 
-app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.4")
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.5")
 
 VIDEO_DIR = "generated_videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
@@ -69,35 +68,23 @@ async def chat_completions(req: ChatRequest):
             yield f"data: {json.dumps(thinking_data)}\n\n"
             await asyncio.sleep(0.3)
 
-            def call_g4f_robust():
-                # Try with specific reliable providers first to avoid browser/quota issues
-                providers_to_try = [DuckDuckGo, Blackbox, DeepSeek, None]
-                for prov in providers_to_try:
-                    try:
-                        if prov:
-                            res = g4f.ChatCompletion.create(
-                                model=target_model,
-                                messages=formatted_messages,
-                                provider=prov,
-                                stream=False
-                            )
-                        else:
-                            res = g4f.ChatCompletion.create(
-                                model=target_model,
-                                messages=formatted_messages,
-                                stream=False
-                            )
-                        if res and len(str(res).strip()) > 0:
-                            return str(res)
-                    except Exception:
-                        continue
-                raise Exception("All providers exhausted or rate-limited.")
+            def call_g4f_direct():
+                # g4f automatically handles the best working provider without manual imports
+                return g4f.ChatCompletion.create(
+                    model=target_model,
+                    messages=formatted_messages,
+                    stream=False
+                )
 
             real_output = ""
             try:
-                real_output = await asyncio.to_thread(call_g4f_robust)
+                response = await asyncio.to_thread(call_g4f_direct)
+                if response:
+                    real_output = str(response)
+                else:
+                    real_output = "⚠️ [Provider returned empty response]"
             except Exception as e:
-                real_output = f"⚠️ [Provider busy, please retry. Details: {str(e)[:50]}]"
+                real_output = f"❌ [Provider Error: {str(e)[:80]}]"
 
             for word in real_output.split():
                 chunk_data = {
