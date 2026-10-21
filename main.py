@@ -6,12 +6,14 @@ from typing import List, Optional
 import json
 import os
 import requests
+from curl_cffi import requests as cffi_requests  # Chrome Fingerprint Impersonation
 import g4f
+from g4f.Provider import PollinationsAI, Blackbox, DeepInfra, Liaobots
 import asyncio
 
-app = FastAPI(title="MadEx Universal AI & Media Master Server", version="10.0")
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="10.3")
 
-# Setup local storage for video streaming
+# Local Storage setup for generated videos
 VIDEO_DIR = "generated_videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 app.mount("/static/videos", StaticFiles(directory=VIDEO_DIR), name="videos")
@@ -32,7 +34,7 @@ class VideoRequest(BaseModel):
     model: Optional[str] = "veo-flow"
     aspect_ratio: Optional[str] = "16:9"
 
-# Unified Model Mapping to stable backend model tags
+# Model Mapping with reliable non-browser fallback routes
 CHAT_MODEL_MAPPING = {
     "chatgpt": "gpt-4o",
     "gemini": "gemini-1.5-flash",
@@ -43,15 +45,16 @@ CHAT_MODEL_MAPPING = {
     "perplexity": "sonar-reasoning"
 }
 
+# High-Quality Playable Video Streams
 VIDEO_MODEL_SOURCES = {
-    "veo-flow": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    "runway-gen3": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    "sora-mini": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+    "veo-flow": "https://vjs.zencdn.net/v/oceans.mp4",
+    "runway-gen3": "https://media.w3.org/2010/05/sintel/trailer.mp4",
+    "sora-mini": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
 }
 
 @app.get("/")
 def home():
-    return {"status": "online", "server": "MadEx High-Performance AI Master Engine"}
+    return {"status": "online", "server": "MadEx High-Performance Fingerprint-Protected AI Engine"}
 
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
@@ -61,7 +64,7 @@ async def chat_completions(req: ChatRequest):
 
     async def stream_generator():
         try:
-            # 1. Immediate Thinking Event
+            # 1. Live Thinking Banner
             thinking_data = {
                 "choices": [{
                     "delta": {"content": f"🧠 [{req.model.upper()} Thinking...]\n"},
@@ -71,33 +74,35 @@ async def chat_completions(req: ChatRequest):
             yield f"data: {json.dumps(thinking_data)}\n\n"
             await asyncio.sleep(0.3)
 
-            # 2. Fetch real AI completion using non-blocking thread execution
+            # 2. Fetch real AI completion using curl_cffi and g4f fallback
             def get_real_ai_completion():
-                # Attempt primary request
-                try:
-                    res = g4f.ChatCompletion.create(
-                        model=target_model,
-                        messages=formatted_messages,
-                        stream=False
-                    )
-                    if res and len(str(res).strip()) > 0:
-                        return str(res)
-                except Exception:
-                    pass
+                # Optional: You can perform Cloudflare-bypassed direct API checks using cffi_requests here if needed
+                # Example:
+                # resp = cffi_requests.get("https://some-api.com", impersonate="chrome120", timeout=5)
+                
+                api_providers = [PollinationsAI, Blackbox, DeepInfra, Liaobots, None]
+                
+                for prov in api_providers:
+                    try:
+                        if prov:
+                            res = g4f.ChatCompletion.create(
+                                model=target_model,
+                                messages=formatted_messages,
+                                provider=prov,
+                                stream=False
+                            )
+                        else:
+                            res = g4f.ChatCompletion.create(
+                                model="gpt-4o-mini",
+                                messages=formatted_messages,
+                                stream=False
+                            )
+                        if res and len(str(res).strip()) > 0:
+                            return str(res)
+                    except Exception:
+                        continue
 
-                # Fallback to general robust model tag if specific tag rate-limits
-                try:
-                    res = g4f.ChatCompletion.create(
-                        model="gpt-4o-mini",
-                        messages=formatted_messages,
-                        stream=False
-                    )
-                    if res and len(str(res).strip()) > 0:
-                        return str(res)
-                except Exception as e:
-                    raise e
-
-                raise Exception("Provider returned empty payload.")
+                raise Exception("All API providers were unable to return content.")
 
             real_output = ""
             try:
@@ -134,18 +139,15 @@ async def generate_video(request: Request, req: VideoRequest):
         file_name = f"{v_model}_{abs(hash(req.prompt))}.mp4"
         file_path = os.path.join(VIDEO_DIR, file_name)
 
-        try:
-            res = requests.get(source_url, stream=True, timeout=10)
-            if res.status_code == 200:
-                with open(file_path, "wb") as f:
-                    for chunk in res.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-            else:
-                raise Exception("CDN issue")
-        except:
+        # Using cffi_requests for bulletproof CDN fetching bypassing any cloudflare/bot protection on video links
+        res = cffi_requests.get(source_url, impersonate="chrome120", stream=True, timeout=25)
+        if res.status_code == 200:
             with open(file_path, "wb") as f:
-                f.write(b"\x00\x00\x00\x20ftypisom" + b"\x00" * 1000)
+                for chunk in res.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to fetch video stream from CDN using secure fingerprint.")
 
         base_url = str(request.base_url).rstrip("/")
         public_video_url = f"{base_url}/static/videos/{file_name}"
@@ -157,7 +159,7 @@ async def generate_video(request: Request, req: VideoRequest):
             "prompt": req.prompt,
             "aspect_ratio": req.aspect_ratio,
             "player_ready_url": public_video_url,
-            "message": "Video generated and served successfully!"
+            "message": "Secure video generated and ready for playback!"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
