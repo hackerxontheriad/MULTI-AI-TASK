@@ -4,3 +4,4 @@ pydantic
 g4f
 requests
 playwright
+curl_cffi
