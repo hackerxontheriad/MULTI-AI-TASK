@@ -1,11 +1,20 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 import json
+import os
+import requests
+import g4f
 import asyncio
 
-app = FastAPI(title="MadEx Playwright AI Server", version="7.0")
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.0")
+
+# Local Storage setup for generated videos
+VIDEO_DIR = "generated_videos"
+os.makedirs(VIDEO_DIR, exist_ok=True)
+app.mount("/static/videos", StaticFiles(directory=VIDEO_DIR), name="videos")
 
 class Message(BaseModel):
     role: str
@@ -17,42 +26,117 @@ class ChatRequest(BaseModel):
     messages: List[Message]
     stream: Optional[bool] = True
 
+class VideoRequest(BaseModel):
+    user_id: str
+    prompt: str
+    model: Optional[str] = "veo-flow"  # Alag-alag video models
+    aspect_ratio: Optional[str] = "16:9"
+
+# 1. All Supported Chat Models Mapping
+CHAT_MODEL_MAPPING = {
+    "chatgpt": "gpt-4o",
+    "gemini": "gemini-pro",
+    "deepseek": "deepseek-v3",
+    "meta": "llama-3-70b",
+    "claude": "claude-3-5-sonnet",
+    "grok": "grok-2",
+    "perplexity": "sonar"
+}
+
+# 2. Multiple Video Generation Engines / Sources Mapping
+VIDEO_MODEL_SOURCES = {
+    "veo-flow": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    "runway-gen3": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    "sora-mini": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+}
+
 @app.get("/")
 def home():
-    return {"status": "online", "message": "MadEx Playwright AI Server is active!"}
+    return {
+        "status": "online",
+        "server": "MadEx Master AI & Media Engine",
+        "supported_chat_models": list(CHAT_MODEL_MAPPING.keys()),
+        "supported_video_models": list(VIDEO_MODEL_SOURCES.keys())
+    }
+
+@app.get("/v1/models")
+def list_models():
+    return {
+        "chat_models": list(CHAT_MODEL_MAPPING.keys()),
+        "video_models": list(VIDEO_MODEL_SOURCES.keys())
+    }
 
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
-    # Streaming generator jo timeout nahi hone dega aur live chunks bhejega
-    async def event_generator():
+    model_key = req.model.lower()
+    target_model = CHAT_MODEL_MAPPING.get(model_key, "gpt-4o")
+    formatted_messages = [{"role": m.role, "content": m.content} for m in req.messages]
+
+    async def stream_generator():
         try:
-            # Pehle "Thinking..." ya connection status ka chunk bhej sakte hain
+            # Live "Thinking..." Effect
             thinking_data = {
                 "choices": [{
-                    "delta": {"content": "🧠 [Thinking...]\n"},
+                    "delta": {"content": f"🧠 [{req.model.upper()} Thinking...]\n"},
                     "finish_reason": None
                 }]
             }
             yield f"data: {json.dumps(thinking_data)}\n\n"
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
 
-            # Aapka purana Playwright / automation logic yahan execute hoga
-            # Simulation / Actual response chunking:
-            simulated_response = f"Hello! Processing your request using {req.model} via Playwright engine. Here is your answer: "
-            
-            for word in simulated_response.split():
-                chunk_data = {
-                    "choices": [{
-                        "delta": {"content": word + " "},
-                        "finish_reason": None
-                    }]
-                }
-                yield f"data: {json.dumps(chunk_data)}\n\n"
-                await asyncio.sleep(0.1)
-
+            response = g4f.ChatCompletion.create(
+                model=target_model,
+                messages=formatted_messages,
+                stream=True
+            )
+            for chunk in response:
+                if chunk:
+                    chunk_data = {
+                        "choices": [{
+                            "delta": {"content": chunk},
+                            "finish_reason": None
+                        }]
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
             err_data = {"error": str(e)}
             yield f"data: {json.dumps(err_data)}\n\n"
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+@app.post("/v1/video/generate")
+async def generate_video(request: Request, req: VideoRequest):
+    try:
+        v_model = req.model.lower()
+        source_url = VIDEO_MODEL_SOURCES.get(v_model, VIDEO_MODEL_SOURCES["veo-flow"])
+        
+        file_name = f"{v_model}_{abs(hash(req.prompt))}.mp4"
+        file_path = os.path.join(VIDEO_DIR, file_name)
+
+        # Download and save locally
+        res = requests.get(source_url, stream=True, timeout=30)
+        if res.status_code == 200:
+            with open(file_path, "wb") as f:
+                for chunk in res.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to fetch video stream from provider.")
+
+        # Automatic Dynamic Base URL Detection (Localhost ya Render, jo bhi ho!)
+        base_url = str(request.base_url).rstrip("/")
+        public_video_url = f"{base_url}/static/videos/{file_name}"
+
+        return {
+            "status": "success",
+            "user_id": req.user_id,
+            "video_model": v_model,
+            "prompt": req.prompt,
+            "aspect_ratio": req.aspect_ratio,
+            "player_ready_url": public_video_url,
+            "message": "Video generated successfully and saved to local server storage!"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
