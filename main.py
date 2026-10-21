@@ -1,123 +1,58 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
-import g4f
+import json
+import asyncio
 
-app = FastAPI(title="MadEx Universal AI & Media Master API", version="4.0")
+app = FastAPI(title="MadEx Playwright AI Server", version="7.0")
 
-# Request Schemas
 class Message(BaseModel):
     role: str
     content: str
 
 class ChatRequest(BaseModel):
     user_id: str
-    model: str  # chatgpt, gemini, deepseek, meta, claude, mistral, perplexity
+    model: str
     messages: List[Message]
-    temperature: Optional[float] = 0.7
-
-class VideoRequest(BaseModel):
-    user_id: str
-    prompt: str
-    aspect_ratio: Optional[str] = "16:9"
-
-# Comprehensive Model Mapping for Chat & Code
-MODEL_MAPPING = {
-    "chatgpt": "gpt-4o",
-    "gemini": "gemini-pro",
-    "deepseek": "deepseek-v3",
-    "meta": "llama-3-70b",
-    "claude": "claude-3-5-sonnet",
-    "mistral": "mistral-large",
-    "perplexity": "sonar"
-}
+    stream: Optional[bool] = True
 
 @app.get("/")
 def home():
-    return {
-        "status": "online",
-        "service": "MadEx Universal AI & Media Server",
-        "available_models": list(MODEL_MAPPING.keys()),
-        "endpoints": {
-            "chat_and_code": "POST /v1/chat/completions",
-            "video_generation": "POST /v1/video/generate",
-            "models_list": "GET /v1/models"
-        }
-    }
+    return {"status": "online", "message": "MadEx Playwright AI Server is active!"}
 
-# OpenAI-compatible Models list endpoint for white-label clients
-@app.get("/v1/models")
-def list_models():
-    return {
-        "object": "list",
-        "data": [{"id": model_id, "object": "model", "owned_by": "madex"} for model_id in MODEL_MAPPING.keys()]
-    }
-
-# Unified Endpoint for Chat & Code Generation across all models
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
-    model_key = req.model.lower()
-    target_model = MODEL_MAPPING.get(model_key, "gpt-4o")
-    
-    # Convert incoming messages into standard provider format
-    formatted_messages = [{"role": m.role, "content": m.content} for m in req.messages]
-    
-    try:
-        response = await g4f.ChatCompletion.create_async(
-            model=target_model,
-            messages=formatted_messages,
-            stream=False
-        )
-        return {
-            "id": "chatcmpl-madex-universal",
-            "object": "chat.completion",
-            "model": req.model,
-            "choices": [{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": response
-                },
-                "finish_reason": "stop"
-            }]
-        }
-    except Exception as e:
-        # Smart Auto-Fallback mechanism if specific model provider fails
+    # Streaming generator jo timeout nahi hone dega aur live chunks bhejega
+    async def event_generator():
         try:
-            fallback_response = await g4f.ChatCompletion.create_async(
-                model=g4f.models.default,
-                messages=formatted_messages,
-                stream=False
-            )
-            return {
-                "id": "chatcmpl-madex-fallback",
-                "object": "chat.completion",
-                "model": f"{req.model}-fallback",
+            # Pehle "Thinking..." ya connection status ka chunk bhej sakte hain
+            thinking_data = {
                 "choices": [{
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": fallback_response
-                    },
-                    "finish_reason": "stop"
+                    "delta": {"content": "🧠 [Thinking...]\n"},
+                    "finish_reason": None
                 }]
             }
-        except Exception as inner_e:
-            raise HTTPException(status_code=500, detail=f"AI Engine Error: {str(inner_e)}")
+            yield f"data: {json.dumps(thinking_data)}\n\n"
+            await asyncio.sleep(0.5)
 
-# Endpoint for Video Generation (Google Veo / Video Flow)
-@app.post("/v1/video/generate")
-async def generate_video(req: VideoRequest):
-    try:
-        # Clean pipeline returning direct media links
-        return {
-            "status": "success",
-            "user_id": req.user_id,
-            "model": "google-veo-flow",
-            "prompt": req.prompt,
-            "aspect_ratio": req.aspect_ratio,
-            "video_url": "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4",
-            "message": "Video generated successfully via Veo Flow pipeline."
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            # Aapka purana Playwright / automation logic yahan execute hoga
+            # Simulation / Actual response chunking:
+            simulated_response = f"Hello! Processing your request using {req.model} via Playwright engine. Here is your answer: "
+            
+            for word in simulated_response.split():
+                chunk_data = {
+                    "choices": [{
+                        "delta": {"content": word + " "},
+                        "finish_reason": None
+                    }]
+                }
+                yield f"data: {json.dumps(chunk_data)}\n\n"
+                await asyncio.sleep(0.1)
+
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            err_data = {"error": str(e)}
+            yield f"data: {json.dumps(err_data)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
