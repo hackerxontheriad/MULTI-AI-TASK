@@ -1,5 +1,5 @@
 fastapi
 uvicorn
-playwright
 pydantic
 g4f
+requests
