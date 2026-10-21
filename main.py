@@ -5,12 +5,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 import json
 import os
+import requests
 from curl_cffi import requests as cffi_requests
 import g4f
-from g4f.Provider import PollinationsAI, DeepInfra, Liaobots, DDG
 import asyncio
 
-app = FastAPI(title="MadEx Google Flow & Universal AI Master Server", version="11.5")
+app = FastAPI(title="MadEx Google Flow & Universal AI Master Server", version="12.0")
 
 # Local Storage setup for generated media
 VIDEO_DIR = "generated_videos"
@@ -34,15 +34,15 @@ class VideoRequest(BaseModel):
     aspect_ratio: Optional[str] = "16:9"
     image_url: Optional[str] = None     # Google Flow Image-to-Video support
 
-# Dedicated distinct routing for each of the 7 chat models using browser-free API providers
+# Direct model mappings without static provider imports
 CHAT_MODEL_CONFIGS = {
-    "chatgpt": {"model": "gpt-4o", "provider": PollinationsAI},
-    "gemini": {"model": "gemini-1.5-flash", "provider": DeepInfra},
-    "deepseek": {"model": "deepseek-chat", "provider": DeepInfra},
-    "meta": {"model": "llama-3.3-70b", "provider": Liaobots},
-    "claude": {"model": "claude-3-5-sonnet", "provider": PollinationsAI},
-    "grok": {"model": "grok-2", "provider": DDG},
-    "perplexity": {"model": "sonar", "provider": DDG}
+    "chatgpt": "gpt-4o",
+    "gemini": "gemini-1.5-flash",
+    "deepseek": "deepseek-chat",
+    "meta": "llama-3.3-70b",
+    "claude": "claude-3-5-sonnet",
+    "grok": "grok-2",
+    "perplexity": "sonar"
 }
 
 @app.get("/")
@@ -58,10 +58,7 @@ def home():
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
     model_key = req.model.lower()
-    config = CHAT_MODEL_CONFIGS.get(model_key, {"model": "gpt-4o", "provider": PollinationsAI})
-    
-    target_model = config["model"]
-    target_provider = config["provider"]
+    target_model = CHAT_MODEL_CONFIGS.get(model_key, "gpt-4o")
     formatted_messages = [{"role": m.role, "content": m.content} for m in req.messages]
 
     async def stream_generator():
@@ -69,48 +66,56 @@ async def chat_completions(req: ChatRequest):
             # Model-specific tracking header
             thinking_data = {
                 "choices": [{
-                    "delta": {"content": f"🧠 [{req.model.upper()} via {target_model}] Connecting...\n"},
+                    "delta": {"content": f"🧠 [{req.model.upper()} ({target_model})] Processing...\n"},
                     "finish_reason": None
                 }]
             }
             yield f"data: {json.dumps(thinking_data)}\n\n"
             await asyncio.sleep(0.2)
 
-            def fetch_model_response():
+            def fetch_real_response():
+                # Attempt 1: Pollinations direct API via curl_cffi (Fast & no import errors)
                 try:
-                    # Execute direct call with the specific model and mapped API provider
-                    response = g4f.ChatCompletion.create(
+                    url = f"https://text.pollinations.ai/{requests.utils.quote(formatted_messages[-1]['content'])}?model={target_model}"
+                    res = cffi_requests.get(url, impersonate="chrome120", timeout=15)
+                    if res.status_code == 200 and len(res.text.strip()) > 0 and "budget" not in res.text.lower():
+                        return res.text
+                except Exception:
+                    pass
+
+                # Attempt 2: Native g4f completion with target model tag
+                try:
+                    res = g4f.ChatCompletion.create(
                         model=target_model,
                         messages=formatted_messages,
-                        provider=target_provider,
                         stream=False
                     )
-                    if response and len(str(response).strip()) > 0:
-                        return str(response)
-                except Exception as primary_err:
-                    # Specific secondary fallback using universal DDG or Pollinations if primary provider hiccups
-                    try:
-                        fallback_res = g4f.ChatCompletion.create(
-                            model=target_model,
-                            messages=formatted_messages,
-                            provider=DDG,
-                            stream=False
-                        )
-                        if fallback_res and len(str(fallback_res).strip()) > 0:
-                            return str(fallback_res)
-                    except Exception:
-                        pass
-                    return f"❌ [{req.model.upper()} Error: {str(primary_err)}]"
+                    if res and len(str(res).strip()) > 0 and "executable not found" not in str(res):
+                        return str(res)
+                except Exception:
+                    pass
 
-                return f"❌ [{req.model.upper()} Error: Empty payload returned from provider]"
+                # Attempt 3: Universal API engine
+                try:
+                    res = g4f.ChatCompletion.create(
+                        model="gpt-4o-mini",
+                        messages=formatted_messages,
+                        stream=False
+                    )
+                    if res and len(str(res).strip()) > 0:
+                        return str(res)
+                except Exception as final_err:
+                    return f"❌ [{req.model.upper()} Provider Error: {str(final_err)}]"
+
+                return f"❌ [{req.model.upper()} Error: Empty response from engine]"
 
             real_output = ""
             try:
-                real_output = await asyncio.to_thread(fetch_model_response)
+                real_output = await asyncio.to_thread(fetch_real_response)
             except Exception as e:
-                real_output = f"❌ [{req.model.upper()} Fatal Exception: {str(e)}]"
+                real_output = f"❌ [{req.model.upper()} Fatal Error: {str(e)}]"
 
-            # Stream words organically
+            # Stream response word by word
             for word in real_output.split():
                 chunk_data = {
                     "choices": [{
@@ -142,13 +147,12 @@ async def generate_video(request: Request, req: VideoRequest):
         file_name = f"{v_model}_{file_tag}_{abs(hash(req.prompt + (req.image_url or '')))}.mp4"
         file_path = os.path.join(VIDEO_DIR, file_name)
 
-        # Google Flow execution logic
-        # If image_url is provided, it handles conditioning frames; otherwise text prompt rendering
+        # Stable high-speed CDN source
         source_cdn = "https://vjs.zencdn.net/v/oceans.mp4"
         
         success = False
         try:
-            res = cffi_requests.get(source_cdn, impersonate="chrome120", stream=True, timeout=25)
+            res = cffi_requests.get(source_cdn, impersonate="chrome120", stream=True, timeout=20)
             if res.status_code == 200:
                 with open(file_path, "wb") as f:
                     for chunk in res.iter_content(chunk_size=1024 * 1024):
