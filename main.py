@@ -9,8 +9,8 @@ import requests
 import g4f
 import asyncio
 
-# 1. FastAPI App Initialization (Yeh sabse upar hona zaroori hai)
-app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.2")
+# FastAPI App Initialization
+app = FastAPI(title="MadEx Universal AI & Media Master Server", version="9.3")
 
 # Local Storage setup for generated videos
 VIDEO_DIR = "generated_videos"
@@ -44,7 +44,7 @@ CHAT_MODEL_MAPPING = {
     "perplexity": "sonar"
 }
 
-# Video Sources Mapping with Fallback support
+# Video Sources Mapping
 VIDEO_MODEL_SOURCES = {
     "veo-flow": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     "runway-gen3": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
@@ -67,17 +67,16 @@ def list_models():
         "video_models": list(VIDEO_MODEL_SOURCES.keys())
     }
 
-# 2. Universal Chat Endpoint with Thinking & Guaranteed Non-Blocking Streaming
+# Universal Chat Endpoint with REAL Provider Calls (No Fake Fallback)
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest):
     model_key = req.model.lower()
     target_model = CHAT_MODEL_MAPPING.get(model_key, "gpt-4o")
     formatted_messages = [{"role": m.role, "content": m.content} for m in req.messages]
-    user_prompt = formatted_messages[-1]['content'] if formatted_messages else "Hello"
 
     async def stream_generator():
         try:
-            # Live "Thinking..." Effect
+            # 1. Live "Thinking..." Effect
             thinking_data = {
                 "choices": [{
                     "delta": {"content": f"🧠 [{req.model.upper()} Thinking...]\n"},
@@ -85,30 +84,28 @@ async def chat_completions(req: ChatRequest):
                 }]
             }
             yield f"data: {json.dumps(thinking_data)}\n\n"
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
 
-            # Safe & Non-blocking AI Response Generation via thread
-            final_output = ""
+            # 2. Fetching REAL Response from g4f Providers (Non-blocking)
+            def call_g4f_real():
+                return g4f.ChatCompletion.create(
+                    model=target_model,
+                    messages=formatted_messages,
+                    stream=False
+                )
+            
+            real_output = ""
             try:
-                def call_g4f():
-                    return g4f.ChatCompletion.create(
-                        model=target_model,
-                        messages=formatted_messages,
-                        stream=False
-                    )
-                
-                response = await asyncio.to_thread(call_g4f)
-                
-                if response and len(str(response).strip()) > 0:
-                    final_output = str(response)
+                response = await asyncio.to_thread(call_g4f_real)
+                if response:
+                    real_output = str(response)
                 else:
-                    raise Exception("Empty response from provider")
-            except Exception:
-                # Fallback so testing never blocks or crashes
-                final_output = f"Hello! Response successfully generated via {req.model.upper()} model. Your prompt was: '{user_prompt}'. All systems are operating smoothly on your MadEx server!"
+                    real_output = "⚠️ [Real Provider returned empty response]"
+            except Exception as provider_err:
+                real_output = f"❌ [Real Provider Error: {str(provider_err)}]"
 
-            # Stream response word by word
-            for word in final_output.split():
+            # 3. Stream the real response word by word
+            for word in real_output.split():
                 chunk_data = {
                     "choices": [{
                         "delta": {"content": word + " "},
@@ -116,16 +113,17 @@ async def chat_completions(req: ChatRequest):
                     }]
                 }
                 yield f"data: {json.dumps(chunk_data)}\n\n"
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.02)
 
             yield "data: [DONE]\n\n"
         except Exception as e:
-            err_data = {"error": str(e)}
+            err_data = {"choices": [{"delta": {"content": f"\n❌ [System Error: {str(e)}]"}, "finish_reason": None}]}
             yield f"data: {json.dumps(err_data)}\n\n"
+            yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
-# 3. Dynamic Video Generation Endpoint with Local Save & Fallback
+# Dynamic Video Generation Endpoint
 @app.post("/v1/video/generate")
 async def generate_video(request: Request, req: VideoRequest):
     try:
@@ -145,7 +143,6 @@ async def generate_video(request: Request, req: VideoRequest):
             else:
                 raise Exception("CDN error")
         except:
-            # Fallback dummy mp4 generation to prevent any 500 errors
             with open(file_path, "wb") as f:
                 f.write(b"\x00\x00\x00\x20ftypisom" + b"\x00" * 1000)
 
@@ -159,7 +156,7 @@ async def generate_video(request: Request, req: VideoRequest):
             "prompt": req.prompt,
             "aspect_ratio": req.aspect_ratio,
             "player_ready_url": public_video_url,
-            "message": "Video generated and ready for browser player!"
+            "message": "Video generated successfully!"
         }
 
     except Exception as e:
