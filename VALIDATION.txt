@@ -1,0 +1,15 @@
+MadEx Multi-AI Gateway v13 - validation performed in this environment
+
+PASS: Python compileall (main.py and tests)
+PASS: 7 offline pytest tests
+PASS: Uvicorn local startup and GET /health
+PASS: GET / returns online metadata
+PASS: GET /v1/models returns an OpenAI-compatible list
+PASS: POST /v1/video/generate without a Google key returns explicit HTTP 503 (no dummy video)
+PASS: POST /v1/chat/completions without installed provider package returns explicit HTTP 503
+
+NOT LIVE-VERIFIED:
+- No API provider credentials were supplied, so real OpenAI/Anthropic/Gemini/DeepSeek/etc. inference was not called.
+- LiteLLM is not preinstalled in this execution container; PyPI install could not complete because this environment could not resolve package hosts. requirements.txt includes it for deployment/local install.
+- Docker is not installed in this execution container, so Docker image build could not be run.
+- Real Gemini video generation requires a valid GEMINI_API_KEY/GOOGLE_API_KEY with model access and available quota.
