@@ -1,15 +1,21 @@
-MadEx Multi-AI Gateway v13 - validation performed in this environment
+MadEx Free Multi-AI Hub v14.1 — validation record (22 October 2026)
 
-PASS: Python compileall (main.py and tests)
-PASS: 7 offline pytest tests
-PASS: Uvicorn local startup and GET /health
-PASS: GET / returns online metadata
-PASS: GET /v1/models returns an OpenAI-compatible list
-PASS: POST /v1/video/generate without a Google key returns explicit HTTP 503 (no dummy video)
-PASS: POST /v1/chat/completions without installed provider package returns explicit HTTP 503
+PASS
+- `python -m compileall -q main.py tests test_universal.py`
+- `pytest -q`: 13 tests passed.
+- JavaScript parser check: `node --check` passed for the frontend script.
+- Uvicorn server started locally and returned HTTP 200 for `/`, `/health`, `/v1/status`, `/v1/catalog`, `/v1/models`, and `/docs`.
+- `python test_universal.py`: smoke check passed for the six endpoints above.
+- OpenAPI JSON loaded successfully and contained the documented API paths.
+- With g4f intentionally absent in the validation container, POST chat returned a controlled HTTP 502 (`no_free_provider_worked`), image returned controlled HTTP 502 (`no_free_image_provider_worked`), and video returned HTTP 503 (`no_verified_keyless_video_provider`, `fake_media=false`). These are expected diagnostics when the core g4f library/provider is unavailable, not successful AI generation.
 
-NOT LIVE-VERIFIED:
-- No API provider credentials were supplied, so real OpenAI/Anthropic/Gemini/DeepSeek/etc. inference was not called.
-- LiteLLM is not preinstalled in this execution container; PyPI install could not complete because this environment could not resolve package hosts. requirements.txt includes it for deployment/local install.
-- Docker is not installed in this execution container, so Docker image build could not be run.
-- Real Gemini video generation requires a valid GEMINI_API_KEY/GOOGLE_API_KEY with model access and available quota.
+Not verified in this environment
+- `g4f` is not installed in the validation container; therefore live text inference and real image/video generation were not claimed as tested.
+- The container couldn't fetch the live `g4f-working` raw catalog at runtime; it correctly fell back to the Auto route. A current web read of that upstream report showed text entries but no verified image/video rows.
+- `docker` executable is not installed in the validation container, so the Docker image was not built here.
+
+Expected limitations
+- Public no-auth providers are unofficial, change often, can require browser helpers, and can fail/rate-limit.
+- Image mode attempts actual g4f image adapters but may return HTTP 502 if none works.
+- Video returns HTTP 503 unless both the live no-auth catalog and installed g4f client expose a real video route. No sample or fabricated MP4 is returned.
+- Chromium exists in the local validation environment and is installed in the Dockerfile, but its presence alone does not guarantee every g4f provider can run.

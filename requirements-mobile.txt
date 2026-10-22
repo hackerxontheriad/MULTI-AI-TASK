@@ -1,0 +1,7 @@
+# Android Termux is more suitable than Pydroid for these dependencies.
+# Browser-based g4f providers may still be unsupported on Android.
+fastapi>=0.115.0
+uvicorn>=0.30.0
+pydantic>=2.8.0
+requests>=2.32.0
+g4f[all]>=0.6.0

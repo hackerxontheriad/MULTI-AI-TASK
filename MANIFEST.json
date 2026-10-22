@@ -1,0 +1,119 @@
+{
+  "name": "MadEx Free Multi-AI Hub",
+  "version": "14.1.0",
+  "created_on": "2026-10-22",
+  "purpose": "Free-mode g4f adapter wrapper; no paid model API credentials configured",
+  "features": [
+    "text chat",
+    "experimental image generation",
+    "video capability detection",
+    "dynamic keyless catalog",
+    "auto fallback",
+    "mobile web UI",
+    "Docker/Render configs",
+    "offline tests"
+  ],
+  "files": [
+    {
+      "path": ".dockerignore",
+      "bytes": 54,
+      "sha256": "38c571d119e3c63bf9e1dd1604e062094f5c53beaf695ba5cef209c19459c724"
+    },
+    {
+      "path": ".env.example",
+      "bytes": 640,
+      "sha256": "81b489ac5e671294ddf3071d2290888522f05cc746c6c1a596b83aef8dddf15a"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 140,
+      "sha256": "aee5c92896d69057d81a318aa4f974fb919c9c48663324281c68f6afcfef5690"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 1229,
+      "sha256": "f2e6aa6325eb705c2bd5dfbb0f951bac2ac40559a1f9d5cc28524af78444573e"
+    },
+    {
+      "path": "Dockerfile",
+      "bytes": 893,
+      "sha256": "5ebe025449f3201ce564de8c1d7f89c7e88bf2e7b2526ab063a458efddcd3602"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 891,
+      "sha256": "6d36a3a80baba0ac2ce207661146f568b4cfdd14862a8bca256c76999496458b"
+    },
+    {
+      "path": "Procfile",
+      "bytes": 50,
+      "sha256": "97acc9877af6f45ea53233917f98bcd82733376ab9618438d647b4bb15d4d7d4"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8376,
+      "sha256": "bccbb6d9d4f92d7ee141b28d544aa84306b749062fac8bb2d846c2b40b934a99"
+    },
+    {
+      "path": "VALIDATION.txt",
+      "bytes": 1965,
+      "sha256": "da942c41ee097838f162ff4defb765154731f4a1eb8288df9291f7fc57a2f8bf"
+    },
+    {
+      "path": "generated_images/.gitkeep",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "generated_media/.gitkeep",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "main.py",
+      "bytes": 28216,
+      "sha256": "ba010959e22613e066c442cb6c2dda0f8dccf47e9341c005bc31e1720df0035d"
+    },
+    {
+      "path": "pytest.ini",
+      "bytes": 40,
+      "sha256": "efcce6f55356a0fdaf6f9631b9d9a9a92fd1caba8ddce5809b8a77bb998cc3ba"
+    },
+    {
+      "path": "render.yaml",
+      "bytes": 288,
+      "sha256": "4c9009f43207c8e2d9d5a75c7bb4bb805d3ff24a153caf2d76140a57fd90bd91"
+    },
+    {
+      "path": "requirements-dev.txt",
+      "bytes": 183,
+      "sha256": "06648cb1bc3e2e97b5c895c99bbf6a9ba1d1355e88396df0dfd7ff44c4c736d3"
+    },
+    {
+      "path": "requirements-mobile.txt",
+      "bytes": 220,
+      "sha256": "f1c6130eaa4244a114bf71587cf5496111a23de5d8b33cbede71d0fda2efc3d4"
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 92,
+      "sha256": "348da22683894f9fdebd08328190cd392cec0c7a755e9e4af20ee52087001499"
+    },
+    {
+      "path": "static/index.html",
+      "bytes": 30484,
+      "sha256": "778a14b94e5b6b41d80ec2ec552b012c3b40be6053e59e876ff141a4b5ee2a56"
+    },
+    {
+      "path": "test_universal.py",
+      "bytes": 1623,
+      "sha256": "0802ae2c19c21aaf243febf78c40e6887d99f11cd8d47c26ebbae40aba3d2fff"
+    },
+    {
+      "path": "tests/test_universal.py",
+      "bytes": 5847,
+      "sha256": "4c7d43250e21fa1d3512afc7241effc11ab8503375ee26988c48d1ad3d454354"
+    }
+  ],
+  "live_provider_limitation": "The current upstream keyless report seen during development contained text entries but no verified image/video entries. Public provider availability changes."
+}

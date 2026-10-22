@@ -1,723 +1,665 @@
-"""MadEx Multi-AI Gateway.
+"""MadEx Free Multi-AI Hub.
 
-Chat calls use LiteLLM (real provider APIs; no browser scraping). Video generation
-uses Google's official Gemini Interactions REST API. Configure provider API keys
-as environment variables; never commit real secrets.
+Uses GPT4Free (g4f) provider adapters. No commercial model API key is configured
+or required by this wrapper. Public providers are unofficial and may fail.
 """
 from __future__ import annotations
 
 import asyncio
 import base64
-import binascii
-import ipaddress
 import json
 import logging
+import functools
+from concurrent.futures import ThreadPoolExecutor
 import os
 import re
-import secrets
-import socket
 import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, Optional
-from urllib.parse import urlparse
+from typing import Any, Optional
 
-import httpx
-from dotenv import load_dotenv
+import requests
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
-load_dotenv()
+APP_DIR = Path(__file__).resolve().parent
+STATIC_DIR = APP_DIR / "static"
+# g4f normally writes media to ./generated_images or ./generated_media.
+IMAGE_DIR = APP_DIR / "generated_images"
+MEDIA_DIR = APP_DIR / "generated_media"
+IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("CHROME_BIN", os.getenv("CHROME_BIN", "/usr/bin/chromium"))
+os.environ.setdefault("CHROMIUM_PATH", os.getenv("CHROMIUM_PATH", "/usr/bin/chromium"))
+
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
-logger = logging.getLogger("madex.gateway")
+log = logging.getLogger("madex-free-ai")
 
-try:
-    from litellm import acompletion as litellm_acompletion
-except Exception:  # Allows health/tests to run before dependencies are installed.
-    litellm_acompletion = None
-
-APP_NAME = "MadEx Multi-AI Gateway"
-APP_VERSION = "13.0.0"
-VIDEO_DIR = Path(os.getenv("VIDEO_DIR", "generated_videos")).resolve()
-VIDEO_DIR.mkdir(parents=True, exist_ok=True)
-MAX_IMAGE_BYTES = 10 * 1024 * 1024
-MAX_VIDEO_JOBS = 100
-VIDEO_JOB_TTL_SECONDS = 24 * 60 * 60
-VIDEO_API_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
+APP_NAME = "MadEx Free Multi-AI Hub"
+VERSION = "14.1.0"
+CATALOG_TTL = max(60, int(os.getenv("CATALOG_TTL_SECONDS", "900")))
+REQUEST_TIMEOUT = max(15, int(os.getenv("G4F_REQUEST_TIMEOUT", "60")))
+G4F_MAX_WORKERS = min(8, max(1, int(os.getenv("G4F_MAX_WORKERS", "4"))))
+G4F_EXECUTOR = ThreadPoolExecutor(max_workers=G4F_MAX_WORKERS, thread_name_prefix="g4f-worker")
+FALLBACK_LIMIT = min(8, max(1, int(os.getenv("G4F_FALLBACK_LIMIT", "4"))))
+CATALOG_URLS = [
+    item.strip()
+    for item in os.getenv(
+        "G4F_WORKING_RESULTS_URLS",
+        "https://raw.githubusercontent.com/Free-AI-Things/g4f-working/main/working/working_results.txt,"
+        "https://raw.githubusercontent.com/maruf009sultan/g4f-working/refs/heads/main/working/working_results.txt",
+    ).split(",")
+    if item.strip().startswith("https://")
+]
+# Do not use external routers listed as model aliases; this project is intended
+# to use the g4f adapters directly, without an OpenRouter key or router account.
+BLOCKED_PROVIDER_TERMS = ("openrouter", "kilocode")
+ALLOWED_TYPES = {"text", "image", "video", "audio"}
 
 app = FastAPI(
     title=APP_NAME,
-    version=APP_VERSION,
-    description=(
-        "OpenAI-compatible chat API with configurable multi-provider failover, "
-        "plus an asynchronous Gemini Omni video-generation endpoint."
-    ),
+    version=VERSION,
+    description="Free-mode multi-provider gateway using g4f; provider availability is not guaranteed.",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
-app.mount("/static/videos", StaticFiles(directory=str(VIDEO_DIR)), name="videos")
-
-# Model IDs change over time. Override any default below in .env when needed.
-MODEL_ALIASES: dict[str, tuple[str, str]] = {
-    "chatgpt": ("MODEL_CHATGPT", "openai/gpt-4o-mini"),
-    "openai": ("MODEL_CHATGPT", "openai/gpt-4o-mini"),
-    "gemini": ("MODEL_GEMINI", "gemini/gemini-2.5-flash"),
-    "deepseek": ("MODEL_DEEPSEEK", "deepseek/deepseek-chat"),
-    "meta": ("MODEL_META", "groq/llama-3.3-70b-versatile"),
-    "llama": ("MODEL_META", "groq/llama-3.3-70b-versatile"),
-    "claude": ("MODEL_CLAUDE", "anthropic/claude-sonnet-4-20250514"),
-    "anthropic": ("MODEL_CLAUDE", "anthropic/claude-sonnet-4-20250514"),
-    "grok": ("MODEL_GROK", "xai/grok-3-mini"),
-    "perplexity": ("MODEL_PERPLEXITY", "perplexity/sonar"),
-    "mistral": ("MODEL_MISTRAL", "mistral/mistral-small-latest"),
-    "openrouter": ("MODEL_OPENROUTER", "openrouter/auto"),
-    "ollama": ("MODEL_OLLAMA", "ollama/llama3.2"),
-}
-
-# LiteLLM provider prefixes -> credentials which normally configure them.
-PROVIDER_ENV: dict[str, tuple[str, ...]] = {
-    "openai": ("OPENAI_API_KEY",),
-    "gemini": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
-    "anthropic": ("ANTHROPIC_API_KEY",),
-    "deepseek": ("DEEPSEEK_API_KEY",),
-    "groq": ("GROQ_API_KEY",),
-    "openrouter": ("OPENROUTER_API_KEY",),
-    "mistral": ("MISTRAL_API_KEY",),
-    "xai": ("XAI_API_KEY",),
-    "perplexity": ("PERPLEXITYAI_API_KEY", "PERPLEXITY_API_KEY"),
-    "together_ai": ("TOGETHERAI_API_KEY", "TOGETHER_API_KEY"),
-    "fireworks_ai": ("FIREWORKS_API_KEY",),
-    "deepinfra": ("DEEPINFRA_API_TOKEN", "DEEPINFRA_API_KEY"),
-    "cerebras": ("CEREBRAS_API_KEY",),
-    "sambanova": ("SAMBANOVA_API_KEY",),
-    "azure": ("AZURE_API_KEY", "AZURE_API_BASE"),
-    "bedrock": ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"),
-    "vertex_ai": ("VERTEXAI_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"),
-    "ollama": ("OLLAMA_BASE_URL",),
-}
-
-# Automatic failover order. Only candidates with their own configured credentials
-# are used; this does not bypass quotas or billing limits at any provider.
-FALLBACK_DEFAULTS: dict[str, tuple[str, str]] = {
-    "openrouter": ("MODEL_OPENROUTER_FALLBACK", "openrouter/auto"),
-    "gemini": ("MODEL_GEMINI_FALLBACK", "gemini/gemini-2.5-flash"),
-    "groq": ("MODEL_GROQ_FALLBACK", "groq/llama-3.3-70b-versatile"),
-    "deepseek": ("MODEL_DEEPSEEK_FALLBACK", "deepseek/deepseek-chat"),
-    "openai": ("MODEL_OPENAI_FALLBACK", "openai/gpt-4o-mini"),
-    "mistral": ("MODEL_MISTRAL_FALLBACK", "mistral/mistral-small-latest"),
-    "anthropic": ("MODEL_ANTHROPIC_FALLBACK", "anthropic/claude-sonnet-4-20250514"),
-    "xai": ("MODEL_XAI_FALLBACK", "xai/grok-3-mini"),
-    "perplexity": ("MODEL_PERPLEXITY_FALLBACK", "perplexity/sonar"),
-    "together_ai": ("MODEL_TOGETHER_FALLBACK", "together_ai/meta-llama/Llama-3.3-70B-Instruct-Turbo"),
-    "fireworks_ai": ("MODEL_FIREWORKS_FALLBACK", "fireworks_ai/accounts/fireworks/models/llama-v3p3-70b-instruct"),
-    "deepinfra": ("MODEL_DEEPINFRA_FALLBACK", "deepinfra/meta-llama/Meta-Llama-3.3-70B-Instruct"),
-    "cerebras": ("MODEL_CEREBRAS_FALLBACK", "cerebras/llama-3.3-70b"),
-    "sambanova": ("MODEL_SAMBANOVA_FALLBACK", "sambanova/Meta-Llama-3.3-70B-Instruct"),
-    "ollama": ("MODEL_OLLAMA", "ollama/llama3.2"),
-}
-FALLBACK_ORDER = [x.strip() for x in os.getenv(
-    "FALLBACK_ORDER",
-    "openrouter,gemini,groq,deepseek,openai,mistral,anthropic,xai,perplexity,together_ai,fireworks_ai,deepinfra,cerebras,sambanova,ollama",
-).split(",") if x.strip()]
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+# g4f's ImageResponse URLs are commonly /media/<filename>.
+app.mount("/media", StaticFiles(directory=str(IMAGE_DIR)), name="media-images")
+app.mount("/media-files", StaticFiles(directory=str(MEDIA_DIR)), name="media-files")
 
 
 class Message(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-    role: Literal["system", "developer", "user", "assistant"]
-    content: str = Field(min_length=1, max_length=100_000)
+    role: str = Field(min_length=1, max_length=30)
+    content: Any
 
-
-class ChatRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-    user_id: str = Field(min_length=1, max_length=128)
-    model: str = Field(min_length=1, max_length=200)
-    messages: list[Message] = Field(min_length=1, max_length=200)
-    stream: bool = False
-    temperature: Optional[float] = Field(default=0.7, ge=0.0, le=2.0)
-    max_tokens: int = Field(default=2048, ge=1, le=32768)
-
-    @field_validator("model")
+    @field_validator("role")
     @classmethod
-    def validate_model_name(cls, value: str) -> str:
-        if "\n" in value or "\r" in value:
-            raise ValueError("model must be a single-line model alias or provider/model ID")
+    def normalize_role(cls, value: str) -> str:
+        value = value.strip().lower()
+        if value not in {"system", "user", "assistant", "developer", "tool"}:
+            raise ValueError("role must be system, developer, user, assistant, or tool")
         return value
 
 
+class ChatRequest(BaseModel):
+    user_id: Optional[str] = Field(default=None, max_length=120)
+    model: str = Field(default="auto", max_length=200)
+    messages: list[Message] = Field(min_length=1, max_length=60)
+    temperature: float = Field(default=0.7, ge=0, le=2)
+    max_tokens: int = Field(default=1024, ge=1, le=8192)
+    stream: bool = False
+
+    @field_validator("model")
+    @classmethod
+    def safe_model(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            return "auto"
+        if len(value) > 200 or any(ch in value for ch in "\r\n\x00"):
+            raise ValueError("invalid model identifier")
+        return value
+
+
+class ImageRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=4000)
+    model: str = Field(default="auto", max_length=200)
+    n: int = Field(default=1, ge=1, le=2)
+    size: Optional[str] = Field(default="1024x1024", max_length=30)
+    response_format: str = Field(default="url", pattern="^(url|b64_json)$")
+
+
 class VideoRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-    user_id: str = Field(min_length=1, max_length=128)
-    prompt: str = Field(min_length=3, max_length=10_000)
-    model: str = "gemini-omni-1.1-flash"
-    aspect_ratio: Literal["16:9", "9:16"] = "16:9"
-    resolution: Literal["360p", "720p", "1080p", "4k"] = "720p"
-    image_url: Optional[str] = Field(default=None, max_length=2048)
-    image_base64: Optional[str] = Field(default=None, max_length=15_000_000)
-    image_mime_type: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
-
-    @model_validator(mode="after")
-    def one_image_source(self) -> "VideoRequest":
-        if self.image_url and self.image_base64:
-            raise ValueError("Use either image_url or image_base64, not both")
-        if self.model.lower() not in {
-            "gemini-omni-1.1-flash", "google-flow", "veo-flow", "gemini-omni"
-        }:
-            raise ValueError(
-                "Unsupported video model. Use gemini-omni-1.1-flash (aliases: google-flow, veo-flow)."
-            )
-        return self
+    user_id: Optional[str] = Field(default=None, max_length=120)
+    prompt: str = Field(min_length=1, max_length=4000)
+    model: str = Field(default="auto", max_length=200)
+    aspect_ratio: str = Field(default="16:9", pattern="^(16:9|9:16|1:1|4:3|3:4)$")
+    image_url: Optional[str] = Field(default=None, max_length=2000)
 
 
-VIDEO_JOBS: dict[str, dict[str, Any]] = {}
-VIDEO_TASKS: set[asyncio.Task] = set()
+_cache: dict[str, Any] = {"at": 0.0, "rows": [], "source": None, "error": None}
+_cache_lock = asyncio.Lock()
 
 
-async def require_api_token(authorization: Optional[str] = Header(default=None)) -> None:
-    """Optional bearer-token protection. Set API_ACCESS_TOKEN in production."""
-    expected = os.getenv("API_ACCESS_TOKEN", "").strip()
-    if not expected:
-        return
-    supplied = authorization or ""
-    if not supplied.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing Bearer API token")
-    provided = supplied[7:].strip()
-    if not secrets.compare_digest(provided, expected):
-        raise HTTPException(status_code=401, detail="Invalid API token")
+def _is_router(provider: str, model: str) -> bool:
+    value = f"{provider} {model}".lower()
+    return any(term in value for term in BLOCKED_PROVIDER_TERMS)
 
 
-def has_provider_credentials(provider: str) -> bool:
-    keys = PROVIDER_ENV.get(provider)
-    if keys is None:
-        # Unknown LiteLLM prefixes may be configured by custom/provider-specific env.
-        return True
-    if provider == "azure":
-        return bool(os.getenv("AZURE_API_KEY") and os.getenv("AZURE_API_BASE"))
-    if provider == "bedrock":
-        return bool(os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"))
-    return any(os.getenv(key, "").strip() for key in keys)
-
-
-def resolve_model_name(requested: str) -> tuple[Optional[str], bool]:
-    key = requested.strip().lower()
-    if key in {"auto", "automatic", "fallback"}:
-        return None, False
-    if key in MODEL_ALIASES:
-        env_name, default = MODEL_ALIASES[key]
-        return os.getenv(env_name, default).strip(), True
-    if "/" not in requested:
-        raise HTTPException(
-            status_code=400,
-            detail=("Unknown model alias. Use one of: " + ", ".join(sorted(MODEL_ALIASES)) +
-                    ", auto, or a LiteLLM provider/model ID such as openrouter/provider/model."),
-        )
-    return requested.strip(), False
-
-
-def provider_for_model(model: str) -> str:
-    return model.split("/", 1)[0].strip().lower()
-
-
-def _unique(items: list[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for item in items:
-        if item and item not in seen:
-            seen.add(item)
-            result.append(item)
-    return result
-
-
-def build_model_candidates(requested: str) -> list[str]:
-    primary, was_alias = resolve_model_name(requested)
-    candidates: list[str] = []
-    if primary:
-        provider = provider_for_model(primary)
-        # Known providers without credentials are skipped; an unknown prefix is
-        # still attempted to support other LiteLLM integrations.
-        if provider not in PROVIDER_ENV or has_provider_credentials(provider):
-            candidates.append(primary)
-    for provider in FALLBACK_ORDER:
-        if provider not in FALLBACK_DEFAULTS or not has_provider_credentials(provider):
+def parse_working_results(raw: str) -> list[dict[str, str]]:
+    """Parse the upstream provider|model|type format, safely ignoring bad rows."""
+    seen: set[tuple[str, str, str]] = set()
+    rows: list[dict[str, str]] = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
             continue
-        env_name, default = FALLBACK_DEFAULTS[provider]
-        candidate = os.getenv(env_name, default).strip()
-        if candidate:
-            candidates.append(candidate)
-    return _unique(candidates)
-
-
-def configured_provider_names() -> list[str]:
-    providers = set(PROVIDER_ENV)
-    return sorted(provider for provider in providers if has_provider_credentials(provider))
-
-
-def litellm_kwargs(model: str) -> dict[str, Any]:
-    kwargs: dict[str, Any] = {}
-    if provider_for_model(model) == "ollama":
-        kwargs["api_base"] = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").strip()
-    return kwargs
-
-
-def _get_choice_content(response: Any) -> tuple[str, Optional[str], Optional[dict[str, Any]]]:
-    try:
-        choice = response.choices[0]
-        message = choice.message
-        content = getattr(message, "content", None)
-        if isinstance(content, list):
-            parts = []
-            for part in content:
-                if isinstance(part, dict):
-                    if part.get("type") == "text":
-                        parts.append(str(part.get("text", "")))
-                else:
-                    text_value = getattr(part, "text", None)
-                    if text_value:
-                        parts.append(str(text_value))
-            content = "".join(parts)
-        text_content = str(content or "").strip()
-        finish_reason = getattr(choice, "finish_reason", None)
-        usage_obj = getattr(response, "usage", None)
-        if hasattr(usage_obj, "model_dump"):
-            usage = usage_obj.model_dump(exclude_none=True)
-        elif isinstance(usage_obj, dict):
-            usage = usage_obj
-        else:
-            usage = None
-        return text_content, finish_reason, usage
-    except Exception as exc:
-        raise RuntimeError("Provider returned an unexpected response format") from exc
-
-
-def _sse(data: dict[str, Any] | str) -> str:
-    if isinstance(data, str):
-        payload = data
-    else:
-        payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    return f"data: {payload}\n\n"
-
-
-def _extract_chunk_text(chunk: Any) -> tuple[str, Optional[str]]:
-    try:
-        choice = chunk.choices[0]
-        delta = getattr(choice, "delta", None)
-        content = getattr(delta, "content", None)
-        if isinstance(content, list):
-            content = "".join(
-                str(getattr(part, "text", "") or (part.get("text", "") if isinstance(part, dict) else ""))
-                for part in content
-            )
-        return str(content or ""), getattr(choice, "finish_reason", None)
-    except Exception:
-        return "", None
-
-
-def _raise_no_provider(candidates: list[str]) -> None:
-    if litellm_acompletion is None:
-        raise HTTPException(
-            status_code=503,
-            detail="LiteLLM is not installed. Install dependencies with: pip install -r requirements.txt",
-        )
-    if not candidates:
-        raise HTTPException(
-            status_code=503,
-            detail=("No configured AI provider credentials were found. Add at least one provider API key "
-                    "to .env; use a separate provider key for fallback when another provider hits quota."),
-        )
-
-
-@app.get("/")
-def home() -> dict[str, Any]:
-    return {
-        "status": "online",
-        "service": APP_NAME,
-        "version": APP_VERSION,
-        "chat_aliases": sorted(MODEL_ALIASES),
-        "configured_providers": configured_provider_names(),
-        "auth_required": bool(os.getenv("API_ACCESS_TOKEN", "").strip()),
-        "video_model": os.getenv("GEMINI_VIDEO_MODEL", "gemini-omni-1.1-flash"),
-        "browser_required": False,
-        "endpoints": {
-            "chat": "POST /v1/chat/completions",
-            "models": "GET /v1/models",
-            "video_submit": "POST /v1/video/generate",
-            "video_job_status": "GET /v1/video/jobs/{job_id}",
-            "health": "GET /health",
-            "docs": "/docs",
-        },
-    }
-
-
-@app.get("/health")
-def health() -> dict[str, Any]:
-    return {
-        "status": "ok",
-        "version": APP_VERSION,
-        "chat_engine_installed": litellm_acompletion is not None,
-        "configured_providers": configured_provider_names(),
-        "video_api_configured": bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")),
-    }
-
-
-@app.get("/v1/models", dependencies=[Depends(require_api_token)])
-def list_models() -> dict[str, Any]:
-    data = []
-    for alias, (env_name, default) in sorted(MODEL_ALIASES.items()):
-        resolved = os.getenv(env_name, default).strip()
-        provider = provider_for_model(resolved)
-        configured = has_provider_credentials(provider) if provider in PROVIDER_ENV else True
-        data.append({
-            "id": alias,
-            "object": "model",
-            "owned_by": "madex",
-            "provider_model": resolved,
-            "configured": configured,
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) < 3:
+            continue
+        provider, model, kind = parts[0], parts[1], parts[2].lower()
+        if not provider or not model or kind not in ALLOWED_TYPES:
+            continue
+        if len(provider) > 100 or len(model) > 200 or _is_router(provider, model):
+            continue
+        # Reject control characters before model/provider names can reach g4f.
+        if any(ord(c) < 32 for c in provider + model):
+            continue
+        key = (provider, model, kind)
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append({
+            "id": f"{provider}|{model}",
+            "provider": provider,
+            "model": model,
+            "type": kind,
+            "verified_by": "g4f-working",
         })
-    return {"object": "list", "data": data}
+    return rows
 
 
-@app.post("/v1/chat/completions", dependencies=[Depends(require_api_token)])
-async def chat_completions(req: ChatRequest):
-    candidates = build_model_candidates(req.model)
-    _raise_no_provider(candidates)
-    messages = [{"role": msg.role, "content": msg.content} for msg in req.messages]
-    request_id = f"chatcmpl-{uuid.uuid4().hex}"
-
-    if req.stream:
-        async def stream_response():
-            for model in candidates:
-                emitted = False
-                try:
-                    response = await litellm_acompletion(
-                        model=model,
-                        messages=messages,
-                        temperature=req.temperature,
-                        max_tokens=req.max_tokens,
-                        stream=True,
-                        **litellm_kwargs(model),
-                    )
-                    async for chunk in response:
-                        content, finish_reason = _extract_chunk_text(chunk)
-                        if content:
-                            emitted = True
-                            yield _sse({
-                                "id": request_id,
-                                "object": "chat.completion.chunk",
-                                "created": int(time.time()),
-                                "model": model,
-                                "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": None}],
-                            })
-                        if finish_reason:
-                            yield _sse({
-                                "id": request_id,
-                                "object": "chat.completion.chunk",
-                                "created": int(time.time()),
-                                "model": model,
-                                "choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}],
-                            })
-                    yield _sse("[DONE]")
-                    return
-                except Exception as exc:
-                    logger.warning("Chat candidate failed: provider=%s error=%s", provider_for_model(model), type(exc).__name__)
-                    # Fallback is safe only before any content has been sent.
-                    if emitted:
-                        yield _sse({
-                            "error": {"message": "Provider stream failed after partial output; retry the request.", "type": "provider_stream_error"}
-                        })
-                        yield _sse("[DONE]")
-                        return
-                    continue
-            yield _sse({
-                "error": {"message": "All configured providers failed. Check provider quotas, keys, and model IDs.", "type": "provider_error"}
-            })
-            yield _sse("[DONE]")
-
-        return StreamingResponse(
-            stream_response(),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
-
-    resolved_requested, _ = resolve_model_name(req.model)
-    failures: list[tuple[str, str]] = []
-    for model in candidates:
+def _fetch_catalog_sync() -> tuple[list[dict[str, str]], Optional[str], Optional[str]]:
+    errors: list[str] = []
+    for url in CATALOG_URLS:
         try:
-            response = await litellm_acompletion(
-                model=model,
-                messages=messages,
-                temperature=req.temperature,
-                max_tokens=req.max_tokens,
-                stream=False,
-                **litellm_kwargs(model),
-            )
-            content, finish_reason, usage = _get_choice_content(response)
-            if not content:
-                failures.append((provider_for_model(model), "EmptyResponse"))
-                continue
-            return {
-                "id": getattr(response, "id", None) or request_id,
-                "object": "chat.completion",
-                "created": getattr(response, "created", None) or int(time.time()),
-                "model": getattr(response, "model", None) or model,
-                "choices": [{
-                    "index": 0,
-                    "message": {"role": "assistant", "content": content},
-                    "finish_reason": finish_reason or "stop",
-                }],
-                "usage": usage,
-                "madex": {
-                    "requested_model": req.model,
-                    "served_by": model,
-                    "fallback_used": bool(resolved_requested and model != resolved_requested),
-                },
-            }
-        except Exception as exc:
-            error_type = type(exc).__name__
-            failures.append((provider_for_model(model), error_type))
-            logger.warning("Chat candidate failed: provider=%s error=%s", provider_for_model(model), error_type)
+            response = requests.get(url, timeout=5, headers={"User-Agent": "MadEx-Free-AI/14.1"})
+            response.raise_for_status()
+            rows = parse_working_results(response.text)
+            if rows:
+                return rows, url, None
+            errors.append(f"{url}: catalog had no parseable entries")
+        except Exception as exc:  # upstream is optional; fall back gracefully
+            errors.append(f"{url}: {type(exc).__name__}")
+    return [], None, "; ".join(errors)[:500] if errors else "catalog unavailable"
 
-    providers_tried = _unique([provider for provider, _ in failures])
-    error_types = _unique([kind for _, kind in failures])
+
+async def get_catalog(refresh: bool = False) -> dict[str, Any]:
+    now = time.time()
+    if not refresh and _cache["rows"] and now - float(_cache["at"]) < CATALOG_TTL:
+        return dict(_cache)
+    async with _cache_lock:
+        now = time.time()
+        if not refresh and _cache["rows"] and now - float(_cache["at"]) < CATALOG_TTL:
+            return dict(_cache)
+        rows, source, error = await asyncio.to_thread(_fetch_catalog_sync)
+        # Even when the list host is unreachable, `auto` remains a real g4f
+        # routing attempt. It is a fallback entry, not a claim of live success.
+        visible_rows = list(rows)
+        if not any(row["type"] == "text" for row in visible_rows):
+            visible_rows.insert(0, {
+                "id": "auto|auto", "provider": "Auto", "model": "auto",
+                "type": "text", "verified_by": "g4f fallback (not live-verified)",
+            })
+        result = {"at": now, "rows": visible_rows, "source": source, "error": error}
+        _cache.update(result)
+        return dict(_cache)
+
+
+def _resolve_provider(provider_name: Optional[str]) -> Any:
+    """Return a provider class only if the installed g4f package actually exports it."""
+    if not provider_name or provider_name.lower() == "auto":
+        return None
+    try:
+        import g4f  # lazy so the API health page still runs if g4f isn't installed
+        provider_module = getattr(g4f, "Provider", None)
+        if provider_module is None:
+            return None
+        variants = [provider_name]
+        variants.extend([
+            provider_name.replace("-", "_"),
+            provider_name.replace("_", ""),
+            re.sub(r"[^A-Za-z0-9]", "", provider_name),
+        ])
+        for candidate in variants:
+            value = getattr(provider_module, candidate, None)
+            if value is not None:
+                return value
+    except Exception:
+        return None
+    return None
+
+
+def _extract_chat_text(response: Any) -> str:
+    if response is None:
+        return ""
+    if isinstance(response, str):
+        return response.strip()
+    choices = getattr(response, "choices", None)
+    if choices:
+        first = choices[0]
+        message = getattr(first, "message", None)
+        if message is not None:
+            content = getattr(message, "content", None)
+            if content is not None:
+                return str(content).strip()
+        if isinstance(first, dict):
+            content = first.get("message", {}).get("content")
+            if content is not None:
+                return str(content).strip()
+    return str(response).strip()
+
+
+def _client_chat_once(model: str, messages: list[dict[str, Any]], provider_name: Optional[str], temperature: float, max_tokens: int) -> str:
+    from g4f.client import Client
+
+    client = Client()
+    kwargs: dict[str, Any] = {
+        "model": model or "auto",
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "web_search": False,
+    }
+    provider = _resolve_provider(provider_name)
+    if provider is not None:
+        kwargs["provider"] = provider
+    # Keep compatibility with provider/client versions that don't accept every
+    # optional argument. Don't silently swap to a paid API: g4f remains gateway.
+    try:
+        response = client.chat.completions.create(**kwargs)
+    except TypeError as exc:
+        message = str(exc).lower()
+        if "web_search" in message:
+            kwargs.pop("web_search", None)
+            response = client.chat.completions.create(**kwargs)
+        elif "max_tokens" in message or "temperature" in message:
+            kwargs.pop("max_tokens", None)
+            kwargs.pop("temperature", None)
+            response = client.chat.completions.create(**kwargs)
+        else:
+            raise
+    text = _extract_chat_text(response)
+    if not text:
+        raise RuntimeError("provider returned an empty response")
+    return text
+
+
+def _model_candidates(requested: str, rows: list[dict[str, str]]) -> list[tuple[str, Optional[str]]]:
+    """Resolve aliases and use a small bounded fallback list from live results."""
+    requested = (requested or "auto").strip()
+    if _is_router("", requested):
+        raise HTTPException(status_code=400, detail="OpenRouter/KiloCode model aliases are disabled in this no-router build")
+    candidates: list[tuple[str, Optional[str]]] = []
+    seen: set[tuple[str, Optional[str]]] = set()
+
+    def add(model: str, provider: Optional[str]):
+        item = (model or "auto", provider)
+        if item not in seen:
+            seen.add(item)
+            candidates.append(item)
+
+    if "|" in requested:
+        provider_name, model_name = requested.split("|", 1)
+        if not _is_router(provider_name, model_name):
+            add(model_name, provider_name)
+    elif requested.lower() not in {"auto", "default"}:
+        alias = requested.lower().replace(" ", "")
+        matches = []
+        for row in rows:
+            if row["type"] != "text" or row.get("verified_by") != "g4f-working":
+                continue
+            combined = (row["provider"] + " " + row["model"]).lower().replace(" ", "")
+            # Match exact/containment for the user's requested family/model.
+            if alias in combined or combined in alias:
+                matches.append(row)
+        for row in matches[:2]:
+            add(row["model"], row["provider"])
+        # Try a literal name if the user typed an official model identifier.
+        add(requested, None)
+
+    for row in rows:
+        if row["type"] != "text" or row.get("verified_by") != "g4f-working":
+            continue
+        add(row["model"], row["provider"])
+        if len(candidates) >= FALLBACK_LIMIT + (1 if requested.lower() not in {"auto", "default"} else 0):
+            break
+    add("auto", None)
+    return candidates[: max(2, FALLBACK_LIMIT + 1)]
+
+
+async def _run_g4f_thread(fn, *args, timeout: int):
+    """Run a potentially blocking g4f provider in a small shared worker pool."""
+    loop = asyncio.get_running_loop()
+    future = loop.run_in_executor(G4F_EXECUTOR, functools.partial(fn, *args))
+    return await asyncio.wait_for(future, timeout=timeout)
+
+
+async def _generate_chat(requested_model: str, messages: list[dict[str, Any]], temperature: float, max_tokens: int) -> tuple[str, str, Optional[str], list[str]]:
+    catalog = await get_catalog()
+    rows = catalog["rows"]
+    candidates = _model_candidates(requested_model, rows)
+    errors: list[str] = []
+    # Candidate attempts are sequential per request; provider calls also run in a
+    # small shared worker pool so concurrent users cannot spawn unlimited workers.
+    for model, provider in candidates:
+        label = f"{provider}|{model}" if provider else model
+        try:
+            text = await _run_g4f_thread(
+                _client_chat_once, model, messages, provider, temperature, max_tokens, timeout=REQUEST_TIMEOUT
+            )
+            return text, model, provider, errors
+        except asyncio.TimeoutError:
+            errors.append(f"{label}: timed out after {REQUEST_TIMEOUT}s")
+        except Exception as exc:
+            errors.append(f"{label}: {type(exc).__name__}: {str(exc)[:140]}")
+        log.info("g4f candidate failed: %s", label)
     raise HTTPException(
         status_code=502,
         detail={
-            "message": "All configured AI providers failed. Check API quota/billing, credentials, and model IDs.",
-            "providers_tried": providers_tried,
-            "error_types": error_types,
-            "hint": "Configure a second provider's own API key or use a local Ollama model for independent fallback.",
+            "error": "no_free_provider_worked",
+            "message": "No keyless g4f provider replied successfully. Providers can be down, rate-limited, or require browser support.",
+            "attempts": errors[-6:],
+            "help": "Refresh /v1/catalog, try model=auto, and inspect /health. No paid API key was used.",
         },
     )
 
 
-def _prune_video_jobs() -> None:
-    now = time.time()
-    expired = [
-        job_id for job_id, item in VIDEO_JOBS.items()
-        if item.get("created_at_epoch", now) < now - VIDEO_JOB_TTL_SECONDS
-    ]
-    for job_id in expired:
-        VIDEO_JOBS.pop(job_id, None)
-    if len(VIDEO_JOBS) > MAX_VIDEO_JOBS:
-        finished = sorted(
-            ((item.get("created_at_epoch", 0), job_id) for job_id, item in VIDEO_JOBS.items()
-             if item.get("status") in {"completed", "failed"})
-        )
-        while len(VIDEO_JOBS) > MAX_VIDEO_JOBS and finished:
-            _, job_id = finished.pop(0)
-            VIDEO_JOBS.pop(job_id, None)
-
-
-async def fetch_public_image(url: str) -> tuple[str, str]:
-    """Fetch an HTTPS image while blocking obvious private-network SSRF targets."""
-    parsed = urlparse(url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise HTTPException(status_code=400, detail="image_url must be a public HTTPS URL")
-    host = parsed.hostname.rstrip(".").lower()
-    if host in {"localhost", "localhost.localdomain"} or host.endswith(".local"):
-        raise HTTPException(status_code=400, detail="Private or local image hosts are not allowed")
-    try:
-        addresses = await asyncio.to_thread(
-            socket.getaddrinfo, host, parsed.port or 443, type=socket.SOCK_STREAM
-        )
-        ips = {ipaddress.ip_address(item[4][0]) for item in addresses}
-        if not ips or any(not ip.is_global for ip in ips):
-            raise HTTPException(status_code=400, detail="Private-network image URLs are not allowed")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail="Could not resolve image_url host") from exc
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(15.0, connect=5.0), follow_redirects=False, trust_env=False
-        ) as client:
-            async with client.stream("GET", url) as response:
-                if response.status_code != 200:
-                    raise HTTPException(status_code=400, detail="Could not fetch image_url (HTTP request failed)")
-                mime_type = response.headers.get("content-type", "").split(";", 1)[0].lower().strip()
-                if mime_type not in {"image/jpeg", "image/png", "image/webp"}:
-                    raise HTTPException(status_code=400, detail="image_url must return JPEG, PNG, or WebP image data")
-                content_length = response.headers.get("content-length")
-                if content_length and int(content_length) > MAX_IMAGE_BYTES:
-                    raise HTTPException(status_code=413, detail="Image is too large (max 10 MB)")
-                chunks = bytearray()
-                async for chunk in response.aiter_bytes():
-                    chunks.extend(chunk)
-                    if len(chunks) > MAX_IMAGE_BYTES:
-                        raise HTTPException(status_code=413, detail="Image is too large (max 10 MB)")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.warning("Image fetch failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=400, detail="Image download failed") from exc
-    return base64.b64encode(bytes(chunks)).decode("ascii"), mime_type
-
-
-async def get_video_input(req: VideoRequest) -> tuple[str | list[dict[str, str]], bool]:
-    if req.image_base64:
-        try:
-            raw = base64.b64decode(req.image_base64, validate=True)
-        except (binascii.Error, ValueError) as exc:
-            raise HTTPException(status_code=400, detail="image_base64 must be valid base64") from exc
-        if len(raw) > MAX_IMAGE_BYTES:
-            raise HTTPException(status_code=413, detail="Image is too large (max 10 MB)")
-        image_b64, mime_type = req.image_base64, req.image_mime_type
-    elif req.image_url:
-        image_b64, mime_type = await fetch_public_image(req.image_url)
+def _extract_image_data(response: Any) -> dict[str, Any]:
+    data = getattr(response, "data", None)
+    if data is None and isinstance(response, dict):
+        data = response.get("data")
+    if not data:
+        raise RuntimeError("image provider returned no media data")
+    first = data[0]
+    if isinstance(first, dict):
+        url = first.get("url")
+        b64 = first.get("b64_json")
+        revised = first.get("revised_prompt")
     else:
-        return req.prompt, False
-    return [
-        {"type": "image", "data": image_b64, "mime_type": mime_type},
-        {"type": "text", "text": req.prompt},
-    ], True
+        url = getattr(first, "url", None)
+        b64 = getattr(first, "b64_json", None)
+        revised = getattr(first, "revised_prompt", None)
+    if url:
+        return {"url": str(url), "revised_prompt": revised}
+    if b64:
+        return {"b64_json": str(b64), "revised_prompt": revised}
+    # Some providers return a data URI in `url`-like content fields.
+    content = getattr(first, "content", None)
+    if isinstance(content, str) and content.startswith("data:image/"):
+        return {"url": content, "revised_prompt": revised}
+    raise RuntimeError("image provider returned data without a usable URL or base64 image")
 
 
-async def generate_video_file(req: VideoRequest) -> tuple[str, str]:
-    api_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
-    video_input, is_image_to_video = await get_video_input(req)
-    model = os.getenv("GEMINI_VIDEO_MODEL", "gemini-omni-1.1-flash").strip()
-    body: dict[str, Any] = {
-        "model": model,
-        "input": video_input,
-        "response_format": {
-            "type": "video",
-            "aspect_ratio": req.aspect_ratio,
-            "resolution": req.resolution,
-        },
-        "generation_config": {
-            "video_config": {"task": "image_to_video" if is_image_to_video else "text_to_video"}
-        },
-    }
-    timeout = float(os.getenv("GEMINI_VIDEO_TIMEOUT_SECONDS", "240"))
+def _client_image_once(model: str, prompt: str, size: Optional[str], response_format: str) -> dict[str, Any]:
+    from g4f.client import Client
+
+    client = Client()
+    kwargs: dict[str, Any] = {"model": model, "prompt": prompt, "response_format": response_format}
+    if size:
+        kwargs["size"] = size
     try:
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(timeout, connect=15.0), follow_redirects=False, trust_env=True
-        ) as client:
-            response = await client.post(
-                VIDEO_API_URL,
-                headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-                json=body,
+        response = client.images.generate(**kwargs)
+    except TypeError as exc:
+        message = str(exc).lower()
+        kwargs.pop("size", None)
+        if "response_format" in message:
+            kwargs.pop("response_format", None)
+        response = client.images.generate(**kwargs)
+    return _extract_image_data(response)
+
+
+async def _generate_image(req: ImageRequest) -> dict[str, Any]:
+    catalog = await get_catalog()
+    rows = [row for row in catalog["rows"] if row["type"] == "image"]
+    candidates: list[str] = []
+    if req.model.lower() not in {"auto", "default"}:
+        candidates.append(req.model)
+    candidates.extend(row["model"] for row in rows)
+    # These are experiments, not advertised as verified. g4f providers have
+    # historically supported Flux/Pollinations image routes, but availability varies.
+    candidates.extend(["flux", "flux-dev", "pollinations"])
+    clean: list[str] = []
+    for item in candidates:
+        if item and item not in clean and not _is_router("", item):
+            clean.append(item)
+    errors: list[str] = []
+    for model in clean[:5]:
+        try:
+            image = await _run_g4f_thread(
+                _client_image_once, model, req.prompt, req.size, req.response_format, timeout=REQUEST_TIMEOUT
             )
-    except httpx.TimeoutException as exc:
-        raise RuntimeError("Google video API timed out; check the job status and try a shorter prompt") from exc
-    except httpx.HTTPError as exc:
-        raise RuntimeError("Could not connect to Google video API") from exc
-
-    if response.status_code == 429:
-        raise RuntimeError("Google video API rate limit/quota reached; check AI Studio quota and billing")
-    if response.status_code in (401, 403):
-        raise RuntimeError("Google video API rejected the key or the project lacks access to this model")
-    if not response.is_success:
-        raise RuntimeError(f"Google video API returned HTTP {response.status_code}")
-    try:
-        result = response.json()
-    except ValueError as exc:
-        raise RuntimeError("Google video API returned invalid JSON") from exc
-
-    video_data: Optional[str] = None
-    output = result.get("output_video")
-    if isinstance(output, dict):
-        video_data = output.get("data")
-    if not video_data:
-        for step in result.get("steps", []):
-            for part in step.get("content", []):
-                if isinstance(part, dict) and part.get("type") == "video":
-                    video_data = part.get("data")
-                    if video_data:
-                        break
-            if video_data:
-                break
-    if not video_data:
-        # Explicitly refuse to fake a file: provider output must contain MP4 bytes.
-        raise RuntimeError("Google API returned no inline video bytes; no MP4 was fabricated")
-    try:
-        video_bytes = base64.b64decode(video_data, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise RuntimeError("Google API video data was not valid base64") from exc
-    if len(video_bytes) < 1024 or b"ftyp" not in video_bytes[:64]:
-        raise RuntimeError("Google API response did not contain a valid MP4 video")
-    file_name = f"{uuid.uuid4().hex}.mp4"
-    file_path = VIDEO_DIR / file_name
-    file_path.write_bytes(video_bytes)
-    return file_name, "image-to-video" if is_image_to_video else "text-to-video"
+            return {"image": image, "model": model, "attempts": len(errors)}
+        except asyncio.TimeoutError:
+            errors.append(f"{model}: timeout")
+        except Exception as exc:
+            errors.append(f"{model}: {type(exc).__name__}: {str(exc)[:120]}")
+            log.info("g4f image candidate failed: %s", model)
+    raise HTTPException(
+        status_code=502,
+        detail={
+            "error": "no_free_image_provider_worked",
+            "message": "No real no-key g4f image provider generated an image for this request.",
+            "attempts": errors[-5:],
+            "help": "Image providers are more volatile than text providers. Check /v1/catalog; the app never substitutes a sample image.",
+        },
+    )
 
 
-async def run_video_job(job_id: str, req_data: dict[str, Any]) -> None:
-    item = VIDEO_JOBS.get(job_id)
-    if item is None:
+async def require_access_token(authorization: Optional[str] = Header(default=None)) -> None:
+    """Optional app-level token. This is not a model-provider API key."""
+    expected = os.getenv("API_ACCESS_TOKEN", "").strip()
+    if not expected:
         return
-    item["status"] = "running"
-    item["started_at"] = datetime.now(timezone.utc).isoformat()
+    actual = (authorization or "").strip()
+    if actual.lower().startswith("bearer "):
+        actual = actual[7:].strip()
+    if not actual or actual != expected:
+        raise HTTPException(status_code=401, detail="Missing or invalid app access token")
+
+
+def _health_info() -> dict[str, Any]:
     try:
-        req = VideoRequest.model_validate(req_data)
-        file_name, mode = await generate_video_file(req)
-        public_base = os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
-        if not public_base:
-            public_base = str(item.get("base_url", "")).rstrip("/")
-        item.update({
-            "status": "completed",
-            "generation_mode": mode,
-            "video_model": os.getenv("GEMINI_VIDEO_MODEL", "gemini-omni-1.1-flash"),
-            "player_ready_url": f"{public_base}/static/videos/{file_name}",
-            "file_name": file_name,
-            "completed_at": datetime.now(timezone.utc).isoformat(),
-            "message": "Video generated by the configured Google Gemini video API.",
-        })
-    except HTTPException as exc:
-        item.update({
-            "status": "failed",
-            "error": exc.detail if isinstance(exc.detail, str) else "Video input validation failed",
-            "completed_at": datetime.now(timezone.utc).isoformat(),
-        })
-    except Exception as exc:
-        logger.warning("Video job failed: %s", type(exc).__name__)
-        item.update({
-            "status": "failed",
-            "error": str(exc) if isinstance(exc, RuntimeError) else "Video generation failed due to a provider/network error",
-            "completed_at": datetime.now(timezone.utc).isoformat(),
-        })
+        import g4f  # noqa: F401
+        g4f_ok = True
+        g4f_version = getattr(g4f, "__version__", "installed")
+    except Exception:
+        g4f_ok = False
+        g4f_version = None
+    chrome_candidates = [os.getenv("CHROME_BIN", ""), os.getenv("CHROMIUM_PATH", ""), "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"]
+    chrome_path = next((path for path in chrome_candidates if path and Path(path).exists()), None)
+    return {
+        "status": "ok",
+        "service": APP_NAME,
+        "version": VERSION,
+        "g4f_installed": g4f_ok,
+        "g4f_version": g4f_version,
+        "chromium_found": bool(chrome_path),
+        "chromium_path": chrome_path,
+        "free_mode": True,
+        "commercial_api_keys_required": False,
+        "note": "Health OK does not mean each public provider is currently working.",
+    }
 
 
-@app.post("/v1/video/generate", status_code=202, dependencies=[Depends(require_api_token)])
-async def generate_video(request: Request, req: VideoRequest) -> dict[str, Any]:
-    if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
+@app.get("/", include_in_schema=False)
+async def home():
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/health")
+async def health():
+    return _health_info()
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    raise HTTPException(status_code=404, detail="No favicon")
+
+
+@app.get("/v1/catalog")
+async def catalog(refresh: bool = False):
+    data = await get_catalog(refresh=refresh)
+    rows = data["rows"]
+    reported_rows = [row for row in rows if row.get("verified_by") == "g4f-working"]
+    counts: dict[str, int] = {kind: sum(1 for row in reported_rows if row["type"] == kind) for kind in sorted(ALLOWED_TYPES)}
+    return {
+        "object": "catalog",
+        "source": data["source"],
+        "fetched_at": int(data["at"]),
+        "cache_ttl_seconds": CATALOG_TTL,
+        "counts": counts,
+        "rows": rows,
+        "catalog_warning": data["error"],
+        "policy": "OpenRouter/KiloCode aliases excluded; entries are community-reported and not guaranteed for your next request.",
+    }
+
+
+@app.get("/v1/models")
+async def models():
+    data = await get_catalog()
+    unique: dict[str, dict[str, Any]] = {"auto": {"id": "auto", "object": "model", "owned_by": "g4f-keyless-fallback", "type": "text"}}
+    for row in data["rows"]:
+        unique.setdefault(row["id"], {
+            "id": row["id"], "object": "model", "owned_by": row["provider"], "type": row["type"]
+        })
+    return {"object": "list", "data": list(unique.values())}
+
+
+@app.post("/v1/catalog/refresh")
+async def refresh_catalog(_: None = Depends(require_access_token)):
+    data = await get_catalog(refresh=True)
+    return {"ok": bool(data["rows"]), "source": data["source"], "count": len(data["rows"]), "warning": data["error"]}
+
+
+@app.post("/v1/chat/completions")
+async def chat_completions(req: ChatRequest, _: None = Depends(require_access_token)):
+    messages = [{"role": msg.role, "content": msg.content} for msg in req.messages]
+    text, used_model, used_provider, errors = await _generate_chat(req.model, messages, req.temperature, req.max_tokens)
+    model_label = f"{used_provider}|{used_model}" if used_provider else used_model
+    response_body = {
+        "id": "chatcmpl-" + uuid.uuid4().hex[:20],
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model_label,
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": text},
+            "finish_reason": "stop",
+        }],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        "madex": {"provider": used_provider, "model": used_model, "fallbacks_before_success": errors},
+    }
+    if req.stream:
+        # The provider response is collected first; this emits OpenAI-compatible
+        # SSE chunks but does not pretend that the upstream generation was token-streamed.
+        async def chunks():
+            start = {"id": response_body["id"], "object": "chat.completion.chunk", "created": response_body["created"], "model": model_label,
+                     "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]}
+            yield f"data: {json.dumps(start, ensure_ascii=False)}\n\n"
+            delta = {"id": response_body["id"], "object": "chat.completion.chunk", "created": response_body["created"], "model": model_label,
+                     "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": None}]}
+            yield f"data: {json.dumps(delta, ensure_ascii=False)}\n\n"
+            end = {"id": response_body["id"], "object": "chat.completion.chunk", "created": response_body["created"], "model": model_label,
+                   "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}
+            yield f"data: {json.dumps(end, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        return StreamingResponse(chunks(), media_type="text/event-stream")
+    return JSONResponse(response_body)
+
+
+@app.post("/v1/images/generations")
+@app.post("/v1/image/generate")
+async def image_generate(req: ImageRequest, _: None = Depends(require_access_token)):
+    result = await _generate_image(req)
+    image = result["image"]
+    item: dict[str, Any] = {}
+    if image.get("url"):
+        item["url"] = image["url"]
+        if image["url"].startswith("/media/"):
+            item["url"] = image["url"]
+    if image.get("b64_json"):
+        item["b64_json"] = image["b64_json"]
+    if image.get("revised_prompt"):
+        item["revised_prompt"] = image["revised_prompt"]
+    return {
+        "created": int(time.time()), "data": [item],
+        "model": result["model"], "provider_mode": "g4f-no-key-attempt",
+        "note": "This is a real provider result; no sample image is substituted.",
+    }
+
+
+@app.post("/v1/video/generate")
+async def video_generate(req: VideoRequest, _: None = Depends(require_access_token)):
+    data = await get_catalog()
+    rows = [row for row in data["rows"] if row["type"] == "video"]
+    # The installed g4f client currently documents chat/images methods, not a
+    # stable cross-provider videos.generate API. Do not pass off sample videos
+    # or fabricated MP4 headers as generated work.
+    try:
+        from g4f.client import Client
+        client = Client()
+        videos_api = getattr(client, "videos", None)
+        generate = getattr(videos_api, "generate", None) if videos_api is not None else None
+    except Exception:
+        generate = None
+    if not rows or not callable(generate):
         raise HTTPException(
             status_code=503,
-            detail="Real video generation needs GEMINI_API_KEY or GOOGLE_API_KEY. No sample/dummy MP4 is returned.",
+            detail={
+                "error": "no_verified_keyless_video_provider",
+                "message": "No working no-auth video provider with a supported g4f video API is listed right now.",
+                "catalog_video_entries": len(rows),
+                "next_step": "Refresh the catalog later or add an authorized video provider. Text/image capability does not imply video capability.",
+                "fake_media": False,
+            },
         )
-    _prune_video_jobs()
-    if len(VIDEO_JOBS) >= MAX_VIDEO_JOBS:
-        raise HTTPException(status_code=429, detail="Too many recent video jobs; try again after old jobs expire")
-    job_id = uuid.uuid4().hex
-    VIDEO_JOBS[job_id] = {
-        "job_id": job_id,
-        "user_id": req.user_id,
-        "status": "queued",
-        "prompt": req.prompt,
-        "model": os.getenv("GEMINI_VIDEO_MODEL", "gemini-omni-1.1-flash"),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_at_epoch": time.time(),
-        "base_url": str(request.base_url).rstrip("/"),
-        "player_ready_url": None,
-    }
-    task = asyncio.create_task(run_video_job(job_id, req.model_dump()))
-    VIDEO_TASKS.add(task)
-    task.add_done_callback(VIDEO_TASKS.discard)
+    # Future-compatible code path: only attempts a video API after g4f exposes it
+    # and the daily list reports at least one no-auth video provider.
+    last_error = None
+    for row in rows[:3]:
+        try:
+            kwargs = {"model": row["model"], "prompt": req.prompt, "aspect_ratio": req.aspect_ratio}
+            if req.image_url:
+                kwargs["image_url"] = req.image_url
+            # Submit through the bounded executor; timeout still cannot forcibly stop
+            # a provider library's own blocking call, but worker count stays capped.
+            loop = asyncio.get_running_loop()
+            response = await asyncio.wait_for(loop.run_in_executor(G4F_EXECUTOR, functools.partial(generate, **kwargs)), timeout=REQUEST_TIMEOUT * 3)
+            output = _extract_media_url(response)
+            if output:
+                return {"status": "success", "id": uuid.uuid4().hex, "model": row["model"], "provider": row["provider"], "video_url": output}
+        except Exception as exc:
+            last_error = f"{type(exc).__name__}: {str(exc)[:160]}"
+    raise HTTPException(status_code=502, detail={"error": "video_provider_failed", "message": "All listed no-auth video providers failed.", "last_error": last_error, "fake_media": False})
+
+
+def _extract_media_url(response: Any) -> Optional[str]:
+    if isinstance(response, str):
+        return response if response.startswith(("http://", "https://", "/media/")) else None
+    data = getattr(response, "data", None)
+    if data is None and isinstance(response, dict):
+        data = response.get("data")
+    if data:
+        first = data[0]
+        if isinstance(first, dict):
+            return first.get("url") or first.get("video_url")
+        return getattr(first, "url", None) or getattr(first, "video_url", None)
+    return getattr(response, "url", None) or getattr(response, "video_url", None)
+
+
+@app.get("/v1/status")
+async def status():
+    data = await get_catalog()
+    reported_rows = [row for row in data["rows"] if row.get("verified_by") == "g4f-working"]
+    counts = {kind: sum(1 for row in reported_rows if row["type"] == kind) for kind in ALLOWED_TYPES}
+    health_data = _health_info()
     return {
-        "status": "queued",
-        "job_id": job_id,
-        "status_url": f"/v1/video/jobs/{job_id}",
-        "message": "Video job queued. Poll status_url; generation is asynchronous.",
+        "status": "ok",
+        "service": APP_NAME,
+        "health": health_data,
+        "catalog_source": data["source"],
+        "catalog_counts": counts,
+        "feature_status": {
+            "text": "available if at least one keyless provider is responding",
+            "image": "experimental; actual provider must respond",
+            "video": "unavailable until the live catalog and installed g4f expose a no-auth video provider",
+        },
     }
 
 
-@app.get("/v1/video/jobs/{job_id}", dependencies=[Depends(require_api_token)])
-def get_video_job(job_id: str) -> dict[str, Any]:
-    _prune_video_jobs()
-    item = VIDEO_JOBS.get(job_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Video job not found or expired")
-    # Don't expose the server-local path or internal epoch timestamp.
-    return {key: value for key, value in item.items() if key not in {"file_name", "created_at_epoch", "base_url"}}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "10000")), reload=False)

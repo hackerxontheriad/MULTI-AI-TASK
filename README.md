@@ -1,94 +1,132 @@
-# MadEx Multi-AI Gateway (v13)
+# MadEx Free Multi-AI Hub — v14.1
 
-A safer replacement for the two supplied ZIPs. It keeps an OpenAI-compatible chat route, supports provider-based fallback, removes browser scraping from the core chat path, and connects the video route to Google's actual Gemini Omni video API. It does **not** pretend a sample MP4 is a generated video.
+A mobile-friendly FastAPI wrapper built around the public GPT4Free (`g4f`) Python client. It adds a simple Chat / Image / Video interface, an OpenAI-style chat endpoint, a live keyless-provider catalog, fallback attempts, diagnostics, tests, and Docker/Render files.
 
-## What's fixed
+## Free-mode promise (and its limits)
 
-- **Chrome/Chromium error:** removed the `g4f`/Playwright browser dependency from the chat pipeline. API calls now go through LiteLLM and configured provider APIs, so the main chat path does not need Chrome or Chromium.
-- **API limit exhaustion:** retries/falls back to another provider only when that provider has its own configured credentials. It cannot bypass a provider's usage quota. Add a second provider key, check billing/quota, or run an Ollama model locally.
-- **Fake video output removed:** `/v1/video/generate` submits to Google's Gemini Omni Interactions API. If the Google key is absent or the provider rejects/fails the request, the job reports an error; no sample MP4 or fabricated file is created.
-- **Video jobs are asynchronous:** submit a job, then poll `/v1/video/jobs/{job_id}` so a long generation does not hold the HTTP request open.
-- **Security:** environment-only credentials, optional bearer-token protection with `API_ACCESS_TOKEN`, model/input validation, bounded request fields, random file names, and HTTPS/public-host checks for `image_url`.
-- **Deployment:** a current Python Dockerfile that uses Render's `PORT` when present and does not attempt to install an unneeded browser.
+- This project does **not** configure an OpenAI, Anthropic/Claude, Gemini, DeepSeek, OpenRouter, or other paid model-provider API key. Chat and image requests use `g4f` provider adapters directly.
+- The public [`g4f-working`](https://github.com/Free-AI-Things/g4f-working) list is fetched dynamically and cached for 15 minutes. It reports model/provider pairs that a community tester found working without API keys/tokens/cookies. A result can stop working at any time.
+- The app deliberately excludes OpenRouter and KiloCode aliases from its catalog; it is meant to try direct g4f adapters rather than require a router account/key.
+- **There is no promise of unlimited or continuous free inference.** Public providers can rate-limit, be unavailable, change their behavior, require browser support, or change their terms. A live text row can still fail for your specific request.
+- **Video is not falsely advertised as always available.** The live `g4f-working` report fetched on 22 Oct 2026 listed text capability rows but no verified image/video rows. Image mode still tries genuine g4f image adapters experimentally. Video checks the live catalog and the installed g4f client; if a verified keyless video provider/API is absent, it returns HTTP 503 without inventing an MP4 or returning a sample clip.
+- If you need reliable image/video service every time, a provider with official API access or a sufficiently powerful local model may be necessary. This is separate from the wrapper.
+
+## Features and endpoints
+
+| Feature | Endpoint | Behavior |
+|---|---|---|
+| Responsive web UI | `/` | Phone/desktop interface with Chat, Image, Video tabs |
+| Health diagnostics | `GET /health` | FastAPI, g4f install status, Chromium path |
+| Service status | `GET /v1/status` | Catalog counts and capability caveats |
+| Keyless catalog | `GET /v1/catalog` | Current `provider|model|type` list; use `?refresh=true` to refresh |
+| OpenAI-like models | `GET /v1/models` | Auto plus discovered provider/model names |
+| Text chat | `POST /v1/chat/completions` | g4f client with bounded keyless provider fallback; optional SSE response |
+| Image generation | `POST /v1/images/generations` or `/v1/image/generate` | Tries actual g4f image adapters; never returns a fake stock image |
+| Video generation | `POST /v1/video/generate` | Works only if an actual no-auth video route is reported and the installed g4f exposes a supported API; otherwise HTTP 503 |
+| API docs | `/docs` | Swagger UI |
 
 ## Run locally
 
-Requires Python 3.11+.
+Python 3.11 is recommended. Browser providers need extra OS dependencies; Docker below handles Chromium on Debian Linux.
+
+### Windows, Linux, or macOS
 
 ```bash
 python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# Linux/macOS/Termux: source .venv/bin/activate
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
+# Linux/macOS: source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-cp .env.example .env
+# Optional local configuration: copy .env.example to .env; set API_ACCESS_TOKEN only if you want app-level protection.
+uvicorn main:app --host 0.0.0.0 --port 10000
 ```
 
-Edit `.env` and add at least one genuine provider key (for example `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, or `OPENAI_API_KEY`). If deploying publicly, replace `API_ACCESS_TOKEN` with a long random secret and send it as `Authorization: Bearer YOUR_TOKEN`. Do not put keys in frontend JavaScript or upload `.env` to GitHub.
+Open `http://127.0.0.1:10000/` or `http://127.0.0.1:10000/docs`. The AI provider service itself does not require a commercial API key, but internet access is required.
+
+### Android / Termux
+
+Termux is generally more suitable than Pydroid for g4f and browser-oriented dependencies. Not every provider or Chrome-based adapter will work on Android.
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 10000 --reload
+pkg update
+pkg install python clang rust ffmpeg flac
+python -m pip install --upgrade pip
+pip install -r requirements-mobile.txt
+python -m uvicorn main:app --host 127.0.0.1 --port 10000
 ```
 
-Open `http://127.0.0.1:10000/docs` and `http://127.0.0.1:10000/health`.
+Then open `http://127.0.0.1:10000/` in your phone browser. If installation fails on your Android/Python version, the error may be from a dependency that does not support that platform. A keyless provider working on a Linux server does not guarantee it will work on Android.
 
-## Chat API
+### Environment settings
 
-The previous aliases remain: `chatgpt`, `gemini`, `deepseek`, `meta`, `claude`, `grok`, `perplexity`, `mistral`, `openrouter`, and `ollama`. You can also pass a LiteLLM model ID such as `provider/model-name`, or `auto` to use configured fallback providers.
+Copy `.env.example` to `.env` for local reference, or enter values in the host's environment settings:
+
+- `API_ACCESS_TOKEN`: optional secret for protecting your own public gateway; it is **not** a provider API key. If unset, generation endpoints are unprotected, so set it before deploying publicly.
+- `G4F_WORKING_RESULTS_URLS`: comma-separated HTTPS URLs to the provider list.
+- `CATALOG_TTL_SECONDS`: catalog cache lifetime (default `900`).
+- `G4F_REQUEST_TIMEOUT`: seconds per provider attempt (default `60`).
+- `G4F_FALLBACK_LIMIT`: number of model/provider candidates to try (default `4`).
+- `G4F_MAX_WORKERS`: shared cap for blocking g4f operations (default `4`), helping limit runaway provider calls after a timeout.
+- `CHROME_BIN` and `CHROMIUM_PATH`: paths to Chromium if a selected provider needs a browser.
+
+## Docker
+
+This image installs Chromium and Chromium Driver to address the `Google Chrome/Chromium not found` type of error. Some g4f adapters may use other helper libraries and still fail independently.
 
 ```bash
-curl http://127.0.0.1:10000/v1/chat/completions \\
-  -H 'Content-Type: application/json' \\
-  -H 'Authorization: Bearer replace-with-a-long-random-token' \\
-  -d '{
-    "user_id": "demo",
-    "model": "auto",
-    "messages": [{"role": "user", "content": "Write a Python prime checker."}],
-    "stream": false
-  }'
+docker build -t madex-free-ai .
+docker run --rm -p 10000:10000 -e PORT=10000 -e API_ACCESS_TOKEN='use-a-long-random-secret' madex-free-ai
 ```
 
-Set `stream` to `true` for Server-Sent Events. For an OpenAI-only, Anthropic-only, or Gemini-only request, use that alias or a provider/model ID. If that provider fails and another provider key is configured, this server can return a fallback answer and reports the actual serving model under `madex.served_by`.
+## Render free hosting
 
-Model IDs can change or vary by account. Override `MODEL_CHATGPT`, `MODEL_CLAUDE`, `MODEL_GEMINI`, etc. in `.env` with model IDs currently available to your provider account. LiteLLM supports 100+ providers, but the models are not all free and this app cannot create credentials or quota for you.
+1. Upload the **extracted project files**, not the ZIP itself, to a GitHub repository. Do not upload `.env` or any secret.
+2. In Render choose **New → Blueprint** and select the repo to use `render.yaml`, or create a Web Service with Docker runtime and use the root `Dockerfile`.
+3. Ensure `healthCheckPath` is `/health`.
+4. Add `API_ACCESS_TOKEN` in Render Environment settings before exposing the service publicly.
+5. After deploy, open the `*.onrender.com` URL, then `/health` and `/docs`.
 
-## Video API
+Render's free service can sleep and has limited RAM/disk/build capacity. Chromium + provider dependencies may be too heavy for some free instances; if the Docker build or memory limit fails, try local/Termux or a smaller host. Files in the container can be lost when the instance restarts/redeploys.
 
-Real generation requires `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and access to `gemini-omni-1.1-flash` in Google AI Studio. Google video generation is billed/limited separately from chat. The older Veo 3.1 preview IDs are deprecated as of October 22, 2026, so this project defaults to Gemini Omni Flash; see Google's current official docs before changing the model.
-
-Submit a video job:
+## API examples
 
 ```bash
-curl -X POST http://127.0.0.1:10000/v1/video/generate \\
-  -H 'Content-Type: application/json' \\
-  -H 'Authorization: Bearer replace-with-a-long-random-token' \\
-  -d '{"user_id":"demo","prompt":"A cinematic drone shot above a neon city at night","aspect_ratio":"16:9","resolution":"720p"}'
+curl http://127.0.0.1:10000/health
+curl http://127.0.0.1:10000/v1/catalog
+
+curl -X POST http://127.0.0.1:10000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"auto","messages":[{"role":"user","content":"Explain Python lists simply."}]}'
+
+curl -X POST http://127.0.0.1:10000/v1/images/generations \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"auto","prompt":"A blue butterfly on a flower, detailed digital art","size":"1024x1024"}'
+
+curl -X POST http://127.0.0.1:10000/v1/video/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"A cinematic city skyline at sunset"}'
 ```
 
-The API returns `202` and a `job_id`. Poll the returned `status_url` until `status` is `completed` or `failed`. When complete, `player_ready_url` points to the generated MP4. Image-to-video accepts either `image_url` (public HTTPS image only) or `image_base64` plus `image_mime_type`.
+When `API_ACCESS_TOKEN` is set, include `-H 'Authorization: Bearer YOUR_TOKEN'` on generation requests. `/v1/video/generate` can legitimately return 503 when no verified keyless provider exists.
 
-**Persistence note:** the starter stores jobs in process memory and videos on the local filesystem. A process restart or redeploy can clear job records; use a persistent disk/object store and a Redis/database-backed queue for production scale.
+## Tests
 
-## Test
-
-Offline logic/unit tests (do not spend API quota):
+Offline tests do not make AI requests, do not need provider access and do not spend credits:
 
 ```bash
 pip install -r requirements-dev.txt
 pytest -q
+python -m compileall -q main.py tests test_universal.py
 ```
 
-Live smoke test against a running server:
+For a running local app, run `python test_universal.py`. For Render, set `API_BASE=https://YOUR-APP.onrender.com` and optional `API_ACCESS_TOKEN` first. These tests check API health and routing, **not** live model quality/generation.
 
-```bash
-python test_universal.py
-```
+## Privacy and security
 
-Set `API_BASE`, `API_ACCESS_TOKEN`, and optionally `TEST_MODEL` as environment variables. Set `TEST_VIDEO=1` only when you intentionally want to submit a real billable video generation request.
+Prompts are sent to whichever public third-party provider responds. Do not send passwords, personal IDs, payment information, confidential source code, or private customer data through free public adapters. Set `API_ACCESS_TOKEN` before publishing your own gateway, and keep it out of GitHub and screenshots.
 
-## Deployment notes
+## Upstream code and terms
 
-- Docker: `docker build -t madex-gateway . && docker run --env-file .env -p 10000:10000 madex-gateway`
-- Render: deploy from this folder using the included Dockerfile; define provider keys and `API_ACCESS_TOKEN` in Render's environment settings.
-- No Chrome/Chromium install is required for the chat route. Do not re-add browser automation unless a separate feature genuinely needs a browser.
-- Never commit API keys. `API_ACCESS_TOKEN` protects your gateway endpoint; provider API keys must remain server-side.
+- GPT4Free: <https://github.com/xtekky/gpt4free> (upstream project is GPL-3.0; review the upstream license and provider terms when redistributing or using commercially).
+- Keyless working provider list: <https://github.com/Free-AI-Things/g4f-working> (upstream reports are community maintained; check that repo's license before reusing the list in a commercial product).
+- This wrapper is separate from those repositories and is not affiliated with Google, OpenAI, Anthropic, xAI, Meta, or any third-party provider.
