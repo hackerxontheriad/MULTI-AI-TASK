@@ -151,3 +151,34 @@ def test_model_candidates_reject_router_aliases():
         assert False, "router aliases should be blocked"
     except HTTPException as exc:
         assert exc.status_code == 400
+
+
+
+def test_model_candidates_returns_only_requested_route():
+    rows = [
+        {"type": "text", "verified_by": "g4f-working", "provider": "Cloudflare", "model": "model-a"},
+        {"type": "text", "verified_by": "g4f-working", "provider": "DeepSeek", "model": "model-b"},
+    ]
+    assert main._model_candidates("Cloudflare|model-a", rows) == [("model-a", "Cloudflare")]
+    assert main._model_candidates("DeepSeek|model-b", rows) == [("model-b", "DeepSeek")]
+    assert main._model_candidates("gemini-2.5-flash", rows) == [("gemini-2.5-flash", None)]
+    assert main._model_candidates("auto", rows) == [("auto", None)]
+
+
+def test_failed_requested_model_does_not_fallback(monkeypatch):
+    async def fake_catalog():
+        return {"rows": [
+            {"type": "text", "verified_by": "g4f-working", "provider": "Cloudflare", "model": "model-a"},
+            {"type": "text", "verified_by": "g4f-working", "provider": "DeepSeek", "model": "model-b"},
+        ]}
+    async def fail_once(*args, **kwargs):
+        raise RuntimeError("selected model offline")
+    monkeypatch.setattr(main, "_run_g4f_thread", fail_once)
+    try:
+        run(main._generate_chat("Cloudflare|model-a", [{"role": "user", "content": "hello"}], 0.7, 100))
+        assert False, "expected selected route failure"
+    except HTTPException as exc:
+        assert exc.status_code == 502
+        assert exc.detail["requested_model"] == "Cloudflare|model-a"
+        assert exc.detail["fallback_used"] is False
+        assert "No other model was tried" in exc.detail["message"]

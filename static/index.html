@@ -22,7 +22,7 @@
 <div class="orb a"></div><div class="orb b"></div>
 <div class="wrap">
 <header class="top">
-  <div class="brand"><div class="logo">MX</div><div><h1>MADEX <span class="gradient">FREE AI HUB</span></h1><p>One workspace · Multiple public providers</p></div></div>
+  <div class="brand"><div class="logo">MX</div><div><h1>MADEX <span class="gradient">FREE AI HUB</span></h1><p>One workspace · One requested provider per API call</p></div></div>
   <div class="live"><span class="dot"></span><span id="live-label">LOCAL UI READY</span></div>
 </header>
 <section class="hero">
@@ -46,7 +46,7 @@
     </div>
   </div>
   <div class="panel-body">
-    <div class="field" id="chat-model-field"><label for="chat-model">TEXT MODEL / PROVIDER</label><select class="control" id="chat-model"><option value="auto">Auto · keyless fallback</option></select><div class="helper">“Auto” tries a small list of reported providers. An official model name is not proof that its provider is working or authorized.</div></div>
+    <div class="field" id="chat-model-field"><label for="chat-model">TEXT MODEL / PROVIDER</label><select class="control" id="chat-model"><option value="auto">Auto · single route</option></select><div class="helper">The selected provider/model is called once. If it fails, the API returns an error instead of switching models.</div></div>
     <div id="chat-mode">
       <div class="chatbox" id="chatbox"><div class="empty"><span class="spark">✧</span><b>Your chat starts here</b><br>Ask a question, write code, explain a topic, or brainstorm an idea.</div></div>
       <div class="field"><label for="chat-input">YOUR MESSAGE</label><textarea id="chat-input" class="control" rows="3" placeholder="Ask something… (Enter to send, Shift+Enter for a new line)"></textarea></div>
@@ -130,7 +130,7 @@
   const fillModelSelect = () => {
     const select = $('chat-model'); const current = select.value || 'auto';
     select.replaceChildren();
-    const auto = document.createElement('option'); auto.value = 'auto'; auto.textContent = 'Auto · keyless fallback'; select.appendChild(auto);
+    const auto = document.createElement('option'); auto.value = 'auto'; auto.textContent = 'Auto · single route'; select.appendChild(auto);
     const rows = catalogRows.filter(row => row.type === 'text');
     rows.forEach(row => {
       if (row.id === 'auto|auto') return;
@@ -190,13 +190,13 @@
   const sendChat = async () => {
     const input = $('chat-input'); const text = input.value.trim(); if (!text) return;
     input.value = ''; history.push({role:'user',content:text}); addBubble('user',text);
-    $('send-btn').disabled=true; $('send-btn').innerHTML='<span class="spinner"></span>Trying free providers…'; setStatus('chat-status','Trying the selected provider, then a small automatic fallback list…');
+    $('send-btn').disabled=true; $('send-btn').innerHTML='<span class="spinner"></span>Trying free providers…'; setStatus('chat-status','Calling only the selected provider/model…');
     try {
       const response = await api('/v1/chat/completions',{method:'POST',body:JSON.stringify({model:$('chat-model').value||'auto',messages:history,temperature:.7,max_tokens:1500,stream:false})});
       const result=await response.json(); const choice=result.choices?.[0]?.message?.content || 'Provider returned an empty reply.';
-      history.push({role:'assistant',content:choice}); addBubble('assistant',choice,`Model: ${result.model || 'auto'} · fallback attempts: ${result.madex?.fallbacks_before_success?.length || 0}`);
-      setStatus('chat-status',`Reply received from ${result.model || 'a g4f provider'}. Provider uptime is not guaranteed.`, 'good');
-    } catch(error) { addBubble('assistant',`No free provider replied.\n${error.message}`,'No successful response'); setStatus('chat-status',`Request failed: ${error.message}`, 'bad'); }
+      history.push({role:'assistant',content:choice}); addBubble('assistant',choice,`Requested model response: ${result.model || 'auto'} · fallback: off`);
+      setStatus('chat-status',`Reply received from ${result.model || 'the selected route'}. No model fallback was used.`, 'good');
+    } catch(error) { addBubble('assistant',`Requested model/provider failed. No fallback model was tried.\n${error.message}`,'No successful response'); setStatus('chat-status',`Request failed: ${error.message}`, 'bad'); }
     finally { $('send-btn').disabled=false; $('send-btn').textContent='Send message ↗'; }
   };
   $('send-btn').addEventListener('click',sendChat);

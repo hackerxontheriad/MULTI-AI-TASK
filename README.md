@@ -130,3 +130,14 @@ Prompts are sent to whichever public third-party provider responds. Do not send 
 - GPT4Free: <https://github.com/xtekky/gpt4free> (upstream project is GPL-3.0; review the upstream license and provider terms when redistributing or using commercially).
 - Keyless working provider list: <https://github.com/Free-AI-Things/g4f-working> (upstream reports are community maintained; check that repo's license before reusing the list in a commercial product).
 - This wrapper is separate from those repositories and is not affiliated with Google, OpenAI, Anthropic, xAI, Meta, or any third-party provider.
+
+
+## Single-model request behavior (v14.1 single-route patch)
+
+Chat requests now attempt only the provider/model requested in `model` (for example,
+`ProviderName|model-id`). If that exact route fails, the API returns HTTP 502 with
+`error: requested_model_failed`, `requested_model`, `reason`, and
+`fallback_used: false`. It does not silently switch to DeepSeek, Gemini, Cloudflare,
+or another provider. `model: "auto"` makes one g4f Auto-route call; the gateway itself
+does not loop over a provider list. Image/video behavior and the rest of the project
+are unchanged.

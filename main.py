@@ -278,46 +278,37 @@ def _client_chat_once(model: str, messages: list[dict[str, Any]], provider_name:
 
 
 def _model_candidates(requested: str, rows: list[dict[str, str]]) -> list[tuple[str, Optional[str]]]:
-    """Resolve aliases and use a small bounded fallback list from live results."""
+    """Resolve exactly one requested provider/model. Never switch to another model."""
     requested = (requested or "auto").strip()
     if _is_router("", requested):
-        raise HTTPException(status_code=400, detail="OpenRouter/KiloCode model aliases are disabled in this no-router build")
-    candidates: list[tuple[str, Optional[str]]] = []
-    seen: set[tuple[str, Optional[str]]] = set()
-
-    def add(model: str, provider: Optional[str]):
-        item = (model or "auto", provider)
-        if item not in seen:
-            seen.add(item)
-            candidates.append(item)
-
+        raise HTTPException(status_code=400, detail={
+            "error": "requested_model_blocked",
+            "requested_model": requested,
+            "message": "OpenRouter/KiloCode model aliases are disabled in this build.",
+        })
+    if requested.lower() in {"auto", "default"}:
+        # g4f's own Auto route is a single upstream call; this gateway does not
+        # iterate through a list of providers/models.
+        return [("auto", None)]
     if "|" in requested:
         provider_name, model_name = requested.split("|", 1)
-        if not _is_router(provider_name, model_name):
-            add(model_name, provider_name)
-    elif requested.lower() not in {"auto", "default"}:
-        alias = requested.lower().replace(" ", "")
-        matches = []
-        for row in rows:
-            if row["type"] != "text" or row.get("verified_by") != "g4f-working":
-                continue
-            combined = (row["provider"] + " " + row["model"]).lower().replace(" ", "")
-            # Match exact/containment for the user's requested family/model.
-            if alias in combined or combined in alias:
-                matches.append(row)
-        for row in matches[:2]:
-            add(row["model"], row["provider"])
-        # Try a literal name if the user typed an official model identifier.
-        add(requested, None)
-
-    for row in rows:
-        if row["type"] != "text" or row.get("verified_by") != "g4f-working":
-            continue
-        add(row["model"], row["provider"])
-        if len(candidates) >= FALLBACK_LIMIT + (1 if requested.lower() not in {"auto", "default"} else 0):
-            break
-    add("auto", None)
-    return candidates[: max(2, FALLBACK_LIMIT + 1)]
+        provider_name, model_name = provider_name.strip(), model_name.strip()
+        if not provider_name or not model_name:
+            raise HTTPException(status_code=400, detail={
+                "error": "invalid_model_selection",
+                "requested_model": requested,
+                "message": "Use the exact provider|model ID from /v1/models.",
+            })
+        if _is_router(provider_name, model_name):
+            raise HTTPException(status_code=400, detail={
+                "error": "requested_model_blocked",
+                "requested_model": requested,
+                "message": "OpenRouter/KiloCode model aliases are disabled in this build.",
+            })
+        return [(model_name, provider_name)]
+    # A bare model name is passed through as-is to g4f, with no provider/model
+    # discovery and no fallback to a different model.
+    return [(requested, None)]
 
 
 async def _run_g4f_thread(fn, *args, timeout: int):
@@ -328,31 +319,27 @@ async def _run_g4f_thread(fn, *args, timeout: int):
 
 
 async def _generate_chat(requested_model: str, messages: list[dict[str, Any]], temperature: float, max_tokens: int) -> tuple[str, str, Optional[str], list[str]]:
-    catalog = await get_catalog()
-    rows = catalog["rows"]
-    candidates = _model_candidates(requested_model, rows)
-    errors: list[str] = []
-    # Candidate attempts are sequential per request; provider calls also run in a
-    # small shared worker pool so concurrent users cannot spawn unlimited workers.
-    for model, provider in candidates:
-        label = f"{provider}|{model}" if provider else model
-        try:
-            text = await _run_g4f_thread(
-                _client_chat_once, model, messages, provider, temperature, max_tokens, timeout=REQUEST_TIMEOUT
-            )
-            return text, model, provider, errors
-        except asyncio.TimeoutError:
-            errors.append(f"{label}: timed out after {REQUEST_TIMEOUT}s")
-        except Exception as exc:
-            errors.append(f"{label}: {type(exc).__name__}: {str(exc)[:140]}")
-        log.info("g4f candidate failed: %s", label)
+    candidates = _model_candidates(requested_model, [])
+    model, provider = candidates[0]  # exactly one model/provider attempt per request
+    label = f"{provider}|{model}" if provider else model
+    try:
+        text = await _run_g4f_thread(
+            _client_chat_once, model, messages, provider, temperature, max_tokens, timeout=REQUEST_TIMEOUT
+        )
+        return text, model, provider, []
+    except asyncio.TimeoutError:
+        reason = f"timed out after {REQUEST_TIMEOUT}s"
+    except Exception as exc:
+        reason = f"{type(exc).__name__}: {str(exc)[:180]}"
+        log.info("requested g4f model failed: %s (%s)", label, reason)
     raise HTTPException(
         status_code=502,
         detail={
-            "error": "no_free_provider_worked",
-            "message": "No keyless g4f provider replied successfully. Providers can be down, rate-limited, or require browser support.",
-            "attempts": errors[-6:],
-            "help": "Refresh /v1/catalog, try model=auto, and inspect /health. No paid API key was used.",
+            "error": "requested_model_failed",
+            "requested_model": label,
+            "message": f"Requested model/provider '{label}' failed. No other model was tried.",
+            "reason": reason,
+            "fallback_used": False,
         },
     )
 
@@ -540,7 +527,7 @@ async def chat_completions(req: ChatRequest, _: None = Depends(require_access_to
             "finish_reason": "stop",
         }],
         "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-        "madex": {"provider": used_provider, "model": used_model, "fallbacks_before_success": errors},
+        "madex": {"provider": used_provider, "model": used_model, "fallbacks_before_success": [], "fallback_used": False},
     }
     if req.stream:
         # The provider response is collected first; this emits OpenAI-compatible
