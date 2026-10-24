@@ -1,35 +1,97 @@
-# MadEx Free Multi-AI Hub — v14.1
+# MADEX Single-Model AI Hub v15.0
 
-A mobile-friendly FastAPI wrapper built around the public GPT4Free (`g4f`) Python client. It adds a simple Chat / Image / Video interface, an OpenAI-style chat endpoint, a live keyless-provider catalog, fallback attempts, diagnostics, tests, and Docker/Render files.
+A mobile-friendly FastAPI app that lets you choose one exact provider/model for each request. It supports official server-side API adapters plus experimental community `g4f` adapters and an optional local Ollama endpoint.
 
-## Free-mode promise (and its limits)
+## Single-route guarantee
 
-- This project does **not** configure an OpenAI, Anthropic/Claude, Gemini, DeepSeek, OpenRouter, or other paid model-provider API key. Chat and image requests use `g4f` provider adapters directly.
-- The public [`g4f-working`](https://github.com/Free-AI-Things/g4f-working) list is fetched dynamically and cached for 15 minutes. It reports model/provider pairs that a community tester found working without API keys/tokens/cookies. A result can stop working at any time.
-- The app deliberately excludes OpenRouter and KiloCode aliases from its catalog; it is meant to try direct g4f adapters rather than require a router account/key.
-- **There is no promise of unlimited or continuous free inference.** Public providers can rate-limit, be unavailable, change their behavior, require browser support, or change their terms. A live text row can still fail for your specific request.
-- **Video is not falsely advertised as always available.** The live `g4f-working` report fetched on 22 Oct 2026 listed text capability rows but no verified image/video rows. Image mode still tries genuine g4f image adapters experimentally. Video checks the live catalog and the installed g4f client; if a verified keyless video provider/API is absent, it returns HTTP 503 without inventing an MP4 or returning a sample clip.
-- If you need reliable image/video service every time, a provider with official API access or a sufficiently powerful local model may be necessary. This is separate from the wrapper.
+- Selecting `OpenAI API|gpt-6-astra` calls the OpenAI API with that exact model ID.
+- Selecting `Gemini API|...`, `Claude API|...`, `xAI Grok API|...`, `Meta Model API|...`, `DeepSeek API|...` or `Perplexity API|...` calls only that provider.
+- Selecting a `g4f:Provider|model` row attempts only that explicit community adapter/model.
+- If the selected provider/model fails, MADEX returns an error and `fallback_used: false`. It does not silently switch to another model.
+- `auto` is one upstream g4f Auto call, not a gateway loop over model candidates. Because g4f Auto itself is managed by the upstream library, its internal routing behavior is outside MADEX's control. Select an exact provider row for the strictest control.
+- Image generation now attempts only the selected image model. Video generation attempts one selected/listed route and returns an error when no actual video API is available. The app does not fabricate image/video outputs.
 
-## Features and endpoints
+## Providers and catalog
 
-| Feature | Endpoint | Behavior |
-|---|---|---|
-| Responsive web UI | `/` | Phone/desktop interface with Chat, Image, Video tabs |
-| Health diagnostics | `GET /health` | FastAPI, g4f install status, Chromium path |
-| Service status | `GET /v1/status` | Catalog counts and capability caveats |
-| Keyless catalog | `GET /v1/catalog` | Current `provider|model|type` list; use `?refresh=true` to refresh |
-| OpenAI-like models | `GET /v1/models` | Auto plus discovered provider/model names |
-| Text chat | `POST /v1/chat/completions` | g4f client with bounded keyless provider fallback; optional SSE response |
-| Image generation | `POST /v1/images/generations` or `/v1/image/generate` | Tries actual g4f image adapters; never returns a fake stock image |
-| Video generation | `POST /v1/video/generate` | Works only if an actual no-auth video route is reported and the installed g4f exposes a supported API; otherwise HTTP 503 |
-| API docs | `/docs` | Swagger UI |
+### Official API routes (keys go on the server)
+
+The selector includes common model IDs for:
+
+- **OpenAI API** — GPT and GPT-OSS chat-capable options. OpenAI API access is separate from a ChatGPT web subscription.
+- **Gemini API** — common Gemini text-generation models.
+- **Claude API** — Claude Opus, Sonnet and Haiku model families.
+- **xAI Grok API** — Grok chat/reasoning models.
+- **Meta Model API** — Muse Spark/Wonder presets. Check Meta's model dashboard if these preset IDs differ for your account.
+- **DeepSeek API** and **Perplexity API**.
+- **Ollama Local** — locally installed models such as Llama, Qwen or Mistral, when an Ollama service is running.
+
+When a valid API key is configured, MADEX also tries that provider's own model-list endpoint and appends the live IDs returned by the provider. Model-list visibility does not guarantee API access, quota or generation support; a request error is shown rather than a fallback.
+
+Official references: [OpenAI models](https://developers.openai.com/api/docs/models), [Gemini models](https://ai.google.dev/gemini-api/docs/models), [Claude Messages API](https://platform.claude.com/docs/en/api/messages), [xAI models](https://docs.x.ai/developers/models), [Meta Model API](https://dev.meta.ai/docs/models), [DeepSeek API](https://api-docs.deepseek.com/), [Perplexity API](https://docs.perplexity.ai/), [Ollama model library](https://ollama.com/library).
+
+### Community routes
+
+- The public `g4f-working` report is fetched dynamically and cached for 15 minutes.
+- Additional Gemini, ChatGPT-web, Claude, Grok, MetaAI, DeepSeek, Perplexity and other community rows are displayed as **experimental presets** so you can inspect and try those routes.
+- Community rows may require cookies/session state, supported browsers, or provider-specific parameters; they may fail or disappear as websites change. A row is not represented as verified just because it is visible.
+- Community adapters must not be used to bypass provider login, access controls or terms. Use official API keys or local open-weight models for reliable supported access.
+
+## Server-side API keys
+
+Copy `.env.example` to `.env` for local development or set the corresponding variables in the host's environment settings. Do not place provider keys in browser JavaScript or commit `.env`.
+
+| Provider | Environment variable |
+|---|---|
+| OpenAI | `OPENAI_API_KEY` |
+| Gemini | `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) |
+| Claude | `ANTHROPIC_API_KEY` |
+| Grok / xAI | `XAI_API_KEY` |
+| Meta Model API | `META_MODEL_API_KEY` (or `MODEL_API_KEY`) |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| Perplexity | `PERPLEXITY_API_KEY` |
+| Local Ollama | `OLLAMA_BASE_URL`, default `http://127.0.0.1:11434` |
+
+Keys are optional if you only try keyless/community options. If a selected official provider's key is missing, the selected route responds with `provider_credentials_missing`; no other model is tried. Some official APIs bill usage or enforce quotas, so check the vendor's current pricing before setting a key.
+
+`API_ACCESS_TOKEN` is a separate optional password for your own MADEX gateway. If deploying publicly, set a strong value before exposing generation endpoints. Never use the provider key as the MADEX access token.
+
+## Endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /` | Responsive phone/desktop UI |
+| `GET /health` | Gateway, g4f and provider-key configuration diagnostics (never returns key values) |
+| `GET /v1/status` | Service and capability status |
+| `GET /v1/catalog` | Live community rows + official presets + detected community adapters |
+| `GET /v1/catalog?refresh=true` | Refresh the cached catalog/model list |
+| `GET /v1/models` | OpenAI-style model list, including route/auth metadata |
+| `POST /v1/chat/completions` | Text chat, OpenAI-compatible request/response shape |
+| `POST /v1/images/generations` | One selected g4f image-model attempt |
+| `POST /v1/video/generate` | One supported video route if the library exposes a real video generation API |
+| `/docs` | Interactive API docs |
+
+Example, official Gemini route:
+
+```bash
+curl -X POST http://127.0.0.1:10000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"Gemini API|gemini-3.8-flash","messages":[{"role":"user","content":"Explain gravity simply."}]}'
+```
+
+Example, exact provider/model from a live community list:
+
+```bash
+curl http://127.0.0.1:10000/v1/models
+curl -X POST http://127.0.0.1:10000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"g4f:Gemini|gemini-2.5-flash","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+If `API_ACCESS_TOKEN` is enabled, include `-H 'Authorization: Bearer YOUR_MADEX_TOKEN'` on generation requests.
 
 ## Run locally
 
-Python 3.11 is recommended. Browser providers need extra OS dependencies; Docker below handles Chromium on Debian Linux.
-
-### Windows, Linux, or macOS
+Python 3.11 is recommended.
 
 ```bash
 python -m venv .venv
@@ -37,107 +99,39 @@ python -m venv .venv
 # Linux/macOS: source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-# Optional local configuration: copy .env.example to .env; set API_ACCESS_TOKEN only if you want app-level protection.
+# Optional: copy .env.example to .env and set provider keys in that environment.
 uvicorn main:app --host 0.0.0.0 --port 10000
 ```
 
-Open `http://127.0.0.1:10000/` or `http://127.0.0.1:10000/docs`. The AI provider service itself does not require a commercial API key, but internet access is required.
+Open `http://127.0.0.1:10000/` or `http://127.0.0.1:10000/docs`.
 
-### Android / Termux
+### Android / Termux / Pydroid
 
-Termux is generally more suitable than Pydroid for g4f and browser-oriented dependencies. Not every provider or Chrome-based adapter will work on Android.
+Termux is generally more suitable for browser-heavy g4f dependencies. Pydroid may run the FastAPI app but not every browser-based community provider. The UI and official API adapters need internet access. To run local Llama models through Ollama, Ollama must be installed and reachable from the Python process; the models can be too large for a typical phone.
 
-```bash
-pkg update
-pkg install python clang rust ffmpeg flac
-python -m pip install --upgrade pip
-pip install -r requirements-mobile.txt
-python -m uvicorn main:app --host 127.0.0.1 --port 10000
-```
+### Docker / Render
 
-Then open `http://127.0.0.1:10000/` in your phone browser. If installation fails on your Android/Python version, the error may be from a dependency that does not support that platform. A keyless provider working on a Linux server does not guarantee it will work on Android.
-
-### Environment settings
-
-Copy `.env.example` to `.env` for local reference, or enter values in the host's environment settings:
-
-- `API_ACCESS_TOKEN`: optional secret for protecting your own public gateway; it is **not** a provider API key. If unset, generation endpoints are unprotected, so set it before deploying publicly.
-- `G4F_WORKING_RESULTS_URLS`: comma-separated HTTPS URLs to the provider list.
-- `CATALOG_TTL_SECONDS`: catalog cache lifetime (default `900`).
-- `G4F_REQUEST_TIMEOUT`: seconds per provider attempt (default `60`).
-- `G4F_FALLBACK_LIMIT`: number of model/provider candidates to try (default `4`).
-- `G4F_MAX_WORKERS`: shared cap for blocking g4f operations (default `4`), helping limit runaway provider calls after a timeout.
-- `CHROME_BIN` and `CHROMIUM_PATH`: paths to Chromium if a selected provider needs a browser.
-
-## Docker
-
-This image installs Chromium and Chromium Driver to address the `Google Chrome/Chromium not found` type of error. Some g4f adapters may use other helper libraries and still fail independently.
-
-```bash
-docker build -t madex-free-ai .
-docker run --rm -p 10000:10000 -e PORT=10000 -e API_ACCESS_TOKEN='use-a-long-random-secret' madex-free-ai
-```
-
-## Render free hosting
-
-1. Upload the **extracted project files**, not the ZIP itself, to a GitHub repository. Do not upload `.env` or any secret.
-2. In Render choose **New → Blueprint** and select the repo to use `render.yaml`, or create a Web Service with Docker runtime and use the root `Dockerfile`.
-3. Ensure `healthCheckPath` is `/health`.
-4. Add `API_ACCESS_TOKEN` in Render Environment settings before exposing the service publicly.
-5. After deploy, open the `*.onrender.com` URL, then `/health` and `/docs`.
-
-Render's free service can sleep and has limited RAM/disk/build capacity. Chromium + provider dependencies may be too heavy for some free instances; if the Docker build or memory limit fails, try local/Termux or a smaller host. Files in the container can be lost when the instance restarts/redeploys.
-
-## API examples
-
-```bash
-curl http://127.0.0.1:10000/health
-curl http://127.0.0.1:10000/v1/catalog
-
-curl -X POST http://127.0.0.1:10000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"auto","messages":[{"role":"user","content":"Explain Python lists simply."}]}'
-
-curl -X POST http://127.0.0.1:10000/v1/images/generations \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"auto","prompt":"A blue butterfly on a flower, detailed digital art","size":"1024x1024"}'
-
-curl -X POST http://127.0.0.1:10000/v1/video/generate \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt":"A cinematic city skyline at sunset"}'
-```
-
-When `API_ACCESS_TOKEN` is set, include `-H 'Authorization: Bearer YOUR_TOKEN'` on generation requests. `/v1/video/generate` can legitimately return 503 when no verified keyless provider exists.
+Build/run with the included `Dockerfile`, or deploy through `render.yaml`. Set `API_ACCESS_TOKEN` before public deployment and add only the API keys you intend to use in the host's **Environment** settings. Free hosting can sleep, run out of memory, or lack the browser support required by some community adapters.
 
 ## Tests
 
-Offline tests do not make AI requests, do not need provider access and do not spend credits:
+Tests use mocks and do not spend API credits or require live provider access:
 
 ```bash
 pip install -r requirements-dev.txt
 pytest -q
-python -m compileall -q main.py tests test_universal.py
+python -m compileall -q main.py provider_catalog.py tests test_universal.py
 ```
 
-For a running local app, run `python test_universal.py`. For Render, set `API_BASE=https://YOUR-APP.onrender.com` and optional `API_ACCESS_TOKEN` first. These tests check API health and routing, **not** live model quality/generation.
+A passing test suite validates the wrapper/routing logic, not whether a real provider is online or an account has quota.
 
-## Privacy and security
+## Security and privacy
 
-Prompts are sent to whichever public third-party provider responds. Do not send passwords, personal IDs, payment information, confidential source code, or private customer data through free public adapters. Set `API_ACCESS_TOKEN` before publishing your own gateway, and keep it out of GitHub and screenshots.
+- Prompts are sent to the specific selected provider. Review that provider's privacy and data policies.
+- Do not send passwords, government IDs, payment information, confidential code or private customer data through public community adapters.
+- API keys belong in server environment variables, never in the frontend, GitHub, browser local storage, screenshots or chat messages.
+- Community adapters are unofficial. Respect provider access controls and terms.
 
-## Upstream code and terms
+## Project notes
 
-- GPT4Free: <https://github.com/xtekky/gpt4free> (upstream project is GPL-3.0; review the upstream license and provider terms when redistributing or using commercially).
-- Keyless working provider list: <https://github.com/Free-AI-Things/g4f-working> (upstream reports are community maintained; check that repo's license before reusing the list in a commercial product).
-- This wrapper is separate from those repositories and is not affiliated with Google, OpenAI, Anthropic, xAI, Meta, or any third-party provider.
-
-
-## Single-model request behavior (v14.1 single-route patch)
-
-Chat requests now attempt only the provider/model requested in `model` (for example,
-`ProviderName|model-id`). If that exact route fails, the API returns HTTP 502 with
-`error: requested_model_failed`, `requested_model`, `reason`, and
-`fallback_used: false`. It does not silently switch to DeepSeek, Gemini, Cloudflare,
-or another provider. `model: "auto"` makes one g4f Auto-route call; the gateway itself
-does not loop over a provider list. Image/video behavior and the rest of the project
-are unchanged.
+This wrapper is not affiliated with OpenAI, Google, Anthropic, xAI, Meta, DeepSeek, Perplexity or the g4f project. Upstream g4f: https://github.com/xtekky/gpt4free. Community provider list: https://github.com/Free-AI-Things/g4f-working.

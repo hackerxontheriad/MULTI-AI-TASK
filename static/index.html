@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#080b1b">
-<meta name="description" content="Free-mode multi-model AI hub powered by g4f keyless provider adapters.">
-<title>MadEx · Free Multi-AI Hub</title>
+<meta name="description" content="Single-model AI hub with official APIs, local Ollama and experimental community adapters.">
+<title>MadEx · Single-Model AI Hub</title>
 <style>
 :root{color-scheme:dark;--bg:#070915;--panel:rgba(18,23,47,.78);--panel2:rgba(23,30,61,.74);--line:rgba(164,183,255,.18);--ink:#f3f6ff;--muted:#9ca8ce;--cyan:#53e3e8;--purple:#9a83ff;--pink:#fa80d5;--good:#60e8b3;--warn:#ffd58b;--bad:#ff8ea6;--radius:22px}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}body{overflow-x:hidden;background:radial-gradient(ellipse at 12% 0%,rgba(71,79,188,.27),transparent 42%),radial-gradient(ellipse at 90% 18%,rgba(31,180,194,.17),transparent 36%),radial-gradient(ellipse at 55% 110%,rgba(151,53,159,.16),transparent 42%),var(--bg)}button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}.orb{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(70px);opacity:.2;animation:float 18s ease-in-out infinite alternate}.orb.a{width:270px;height:270px;background:#684dff;top:80px;left:-130px}.orb.b{width:300px;height:300px;background:#00d4d8;right:-145px;top:36%;animation-delay:-7s}@keyframes float{to{transform:translate(45px,-35px) scale(1.12)}}
@@ -22,23 +22,23 @@
 <div class="orb a"></div><div class="orb b"></div>
 <div class="wrap">
 <header class="top">
-  <div class="brand"><div class="logo">MX</div><div><h1>MADEX <span class="gradient">FREE AI HUB</span></h1><p>One workspace · One requested provider per API call</p></div></div>
+  <div class="brand"><div class="logo">MX</div><div><h1>MADEX <span class="gradient">SINGLE-MODEL AI HUB</span></h1><p>One workspace · One requested provider per API call</p></div></div>
   <div class="live"><span class="dot"></span><span id="live-label">LOCAL UI READY</span></div>
 </header>
 <section class="hero">
-  <div><h2>One hub. <span class="gradient">Three creative modes.</span></h2><p>Text chat, image generation and video capability checks in a mobile-friendly interface. It uses g4f provider adapters without configuring paid model API keys. Public providers can go offline or rate-limit at any time.</p></div>
-  <div class="hero-actions"><button class="btn" id="refresh-btn">↻ Refresh free catalog</button><button class="btn" id="health-btn">Run diagnostics</button></div>
+  <div><h2>One hub. <span class="gradient">Every provider, one route.</span></h2><p>Chat, image and video capability checks in one mobile-friendly interface. Choose OpenAI/ChatGPT, Gemini, Claude, Grok, Meta, DeepSeek, Perplexity, local Ollama or experimental community adapters. Official APIs need their own server-side keys; community routes can be unstable.</p></div>
+  <div class="hero-actions"><button class="btn" id="refresh-btn">↻ Refresh model catalog</button><button class="btn" id="health-btn">Run diagnostics</button></div>
 </section>
 <section class="status-grid" aria-label="Service status">
   <div class="status-card"><div class="eyebrow">Gateway</div><strong id="s-gateway">Checking…</strong><small>Local app health</small></div>
   <div class="status-card"><div class="eyebrow">g4f library</div><strong id="s-g4f">Checking…</strong><small>Installed in the Python environment</small></div>
-  <div class="status-card"><div class="eyebrow">Free text rows</div><strong id="s-text">—</strong><small>Community-reported provider/model pairs</small></div>
+  <div class="status-card"><div class="eyebrow">Live community text rows</div><strong id="s-text">—</strong><small>Community-reported provider/model pairs</small></div>
   <div class="status-card"><div class="eyebrow">Image / video rows</div><strong id="s-media">—</strong><small>Only counts reported in the live list</small></div>
 </section>
 <div class="layout">
 <main class="panel">
   <div class="panel-head">
-    <div><h3>Creative workspace</h3><p>Choose a mode. Provider selection is not a guarantee of availability.</p></div>
+    <div><h3>Creative workspace</h3><p>Choose one exact provider/model. A failed request returns an error—MADEX does not switch to another model.</p></div>
     <div class="tabs" role="tablist" aria-label="AI feature mode">
       <button class="tab active" data-mode="chat" role="tab" aria-selected="true">✦ Chat</button>
       <button class="tab" data-mode="image" role="tab" aria-selected="false">▧ Image</button>
@@ -46,7 +46,7 @@
     </div>
   </div>
   <div class="panel-body">
-    <div class="field" id="chat-model-field"><label for="chat-model">TEXT MODEL / PROVIDER</label><select class="control" id="chat-model"><option value="auto">Auto · single route</option></select><div class="helper">The selected provider/model is called once. If it fails, the API returns an error instead of switching models.</div></div>
+    <div class="field" id="chat-model-field"><label for="chat-model">TEXT MODEL / PROVIDER</label><select class="control" id="chat-model"><option value="auto">Auto · single route</option></select><div class="helper">Official API entries require that provider’s key on the server. Community entries may be unavailable or may require a provider session. If selected route fails, no other model is tried.</div></div>
     <div id="chat-mode">
       <div class="chatbox" id="chatbox"><div class="empty"><span class="spark">✧</span><b>Your chat starts here</b><br>Ask a question, write code, explain a topic, or brainstorm an idea.</div></div>
       <div class="field"><label for="chat-input">YOUR MESSAGE</label><textarea id="chat-input" class="control" rows="3" placeholder="Ask something… (Enter to send, Shift+Enter for a new line)"></textarea></div>
@@ -55,10 +55,10 @@
     </div>
     <div id="image-mode" class="hidden">
       <div class="field"><label for="image-prompt">IMAGE PROMPT</label><textarea id="image-prompt" class="control" rows="4" placeholder="A cinematic 3D glass butterfly in a neon garden, high detail…"></textarea></div>
-      <div class="row"><div class="field"><label for="image-model">IMAGE MODEL</label><select id="image-model" class="control"><option value="auto">Auto / first working route</option><option value="flux">Flux (experimental)</option><option value="flux-dev">Flux Dev (experimental)</option><option value="pollinations">Pollinations (experimental)</option></select></div><div class="field"><label for="image-size">SIZE</label><select id="image-size" class="control"><option>1024x1024</option><option>1024x1536</option><option>1536x1024</option></select></div></div>
+      <div class="row"><div class="field"><label for="image-model">IMAGE MODEL</label><select id="image-model" class="control"><option value="auto">g4f Auto · one attempt</option><option value="flux">Flux (experimental)</option><option value="flux-dev">Flux Dev (experimental)</option><option value="pollinations">Pollinations (experimental)</option></select></div><div class="field"><label for="image-size">SIZE</label><select id="image-size" class="control"><option>1024x1024</option><option>1024x1536</option><option>1536x1024</option></select></div></div>
       <button class="btn primary" id="image-btn">Generate image ✧</button>
       <div id="image-status" class="helper" aria-live="polite" style="margin-top:10px"></div><div id="image-result" class="result"></div>
-      <div class="notice">Image generation is experimental in free mode. The app will show an error if all real no-key image providers fail; it will not substitute a stock image.</div>
+      <div class="notice">Image generation is experimental. The app attempts only the selected image model (Auto is one upstream attempt) and never substitutes a stock image.</div>
     </div>
     <div id="video-mode" class="hidden">
       <div class="field"><label for="video-prompt">VIDEO PROMPT</label><textarea id="video-prompt" class="control" rows="4" placeholder="A slow cinematic camera move around a futuristic city at sunset…"></textarea></div>
@@ -72,14 +72,14 @@
 <aside class="side-stack">
   <section class="panel"><div class="panel-head"><div><h3>Server access</h3><p>Optional protection for your own hosted app</p></div></div><div class="side-body">
     <div class="field"><label for="access-token">APP ACCESS TOKEN</label><input id="access-token" class="control" type="password" autocomplete="current-password" placeholder="Leave blank if not configured"></div>
-    <div class="helper">This is your app's optional password—not an AI API key. Saved only in this browser's local storage. Never share it with anyone.</div>
-    <div class="rule"></div><div class="helper">API keys for OpenAI, Claude, Gemini, OpenRouter or other paid gateways are not used by this project.</div>
+    <div class="helper">This is your app's optional gateway password—not a provider key. Saved only in this browser's local storage. Never share it with anyone.</div>
+    <div class="rule"></div><div class="helper">Provider keys belong in the server environment (.env locally or host Environment settings). Do not paste OpenAI, Gemini, Claude, Grok or Meta provider keys into this browser box.</div>
   </div></section>
-  <section class="panel"><div class="panel-head"><div><h3>Capability report</h3><p id="catalog-source">Checking free model list…</p></div><span class="chip" id="catalog-age">LIVE CHECK</span></div><div class="side-body"><div class="provider-list" id="capability-list"><div class="provider-item"><div><strong>Text</strong><span>Checking catalog</span></div><span class="chip">…</span></div></div><div class="rule"></div><div class="helper" id="catalog-note">The community list is a snapshot, not a guarantee that a request will succeed.</div></div></section>
+  <section class="panel"><div class="panel-head"><div><h3>Capability report</h3><p id="catalog-source">Checking model catalog…</p></div><span class="chip" id="catalog-age">LIVE CHECK</span></div><div class="side-body"><div class="provider-list" id="capability-list"><div class="provider-item"><div><strong>Text</strong><span>Checking catalog</span></div><span class="chip">…</span></div></div><div class="rule"></div><div class="helper" id="catalog-note">Official API model presets are not an availability guarantee. API keys are configured on the server; community routes are unverified.</div></div></section>
   <section class="panel"><div class="panel-head"><div><h3>API shortcuts</h3><p>Docs and direct status endpoints</p></div></div><div class="side-body"><div class="links"><a class="link" href="/docs" target="_blank" rel="noopener">API docs ↗</a><a class="link" href="/health" target="_blank" rel="noopener">Health JSON ↗</a><a class="link" href="/v1/catalog" target="_blank" rel="noopener">Catalog JSON ↗</a><a class="link" href="/v1/status" target="_blank" rel="noopener">Status JSON ↗</a></div><div class="rule"></div><div class="helper">Need the OpenAI-style endpoint? <code>/v1/chat/completions</code></div></div></section>
 </aside>
 </div>
-<footer class="footer">MADEX FREE AI HUB · Community-maintained provider adapters, no uptime guarantee.<br>Use providers lawfully and follow their terms. <a href="https://github.com/xtekky/gpt4free" target="_blank" rel="noopener">g4f upstream</a> · <a href="https://github.com/Free-AI-Things/g4f-working" target="_blank" rel="noopener">keyless provider list</a></footer>
+<footer class="footer">MADEX SINGLE-MODEL AI HUB · Community-maintained provider adapters, no uptime guarantee.<br>Use providers lawfully and follow their terms. <a href="https://github.com/xtekky/gpt4free" target="_blank" rel="noopener">g4f upstream</a> · <a href="https://github.com/Free-AI-Things/g4f-working" target="_blank" rel="noopener">keyless provider list</a></footer>
 </div>
 <script>
 (() => {
@@ -132,9 +132,19 @@
     select.replaceChildren();
     const auto = document.createElement('option'); auto.value = 'auto'; auto.textContent = 'Auto · single route'; select.appendChild(auto);
     const rows = catalogRows.filter(row => row.type === 'text');
+    rows.sort((a,b) => `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
     rows.forEach(row => {
       if (row.id === 'auto|auto') return;
-      const option = document.createElement('option'); option.value = row.id; option.textContent = `${row.provider} · ${row.model}`; select.appendChild(option);
+      const option = document.createElement('option'); option.value = row.id;
+      let status = '';
+      if (row.route_kind === 'official_api') status = row.auth_configured ? ' · API key set' : ' · API key required';
+      if (row.model_id_preset_unverified) status += ' · verify model ID';
+      else if (row.route_kind === 'local') status = ' · local service';
+      else if (row.route_kind === 'g4f_community') { status = ' · community/experimental'; if (row.adapter_installed === false) status += ' · adapter not detected'; }
+      else if (row.verified_by === 'g4f-working') status = ' · live-list reported';
+      option.textContent = `${row.provider} · ${row.model}${status}`;
+      option.title = row.availability || '';
+      select.appendChild(option);
     });
     if ([...select.options].some(o => o.value === current)) select.value = current;
   };
@@ -170,10 +180,10 @@
       if (textCount === 0) setStatus('chat-status', 'No working-list text rows loaded; Auto can still try g4f.', '');
     } catch (error) {
       $('catalog-source').textContent = 'Catalog unavailable'; $('catalog-age').textContent = 'OFFLINE';
-      $('catalog-note').textContent = 'The public model-list host could not be reached. Auto mode will still attempt direct g4f routing.';
+      $('catalog-note').textContent = 'The public community list could not be reached. Official presets remain selectable; community options are experimental.';
       setStatus('chat-status', `Catalog load warning: ${error.message}`);
     } finally {
-      $('refresh-btn').disabled = false; $('refresh-btn').textContent = '↻ Refresh free catalog';
+      $('refresh-btn').disabled = false; $('refresh-btn').textContent = '↻ Refresh model catalog';
     }
   };
   const loadHealth = async () => {
@@ -190,7 +200,7 @@
   const sendChat = async () => {
     const input = $('chat-input'); const text = input.value.trim(); if (!text) return;
     input.value = ''; history.push({role:'user',content:text}); addBubble('user',text);
-    $('send-btn').disabled=true; $('send-btn').innerHTML='<span class="spinner"></span>Trying free providers…'; setStatus('chat-status','Calling only the selected provider/model…');
+    $('send-btn').disabled=true; $('send-btn').innerHTML='<span class="spinner"></span>Calling selected route…'; setStatus('chat-status','Calling only the selected provider/model…');
     try {
       const response = await api('/v1/chat/completions',{method:'POST',body:JSON.stringify({model:$('chat-model').value||'auto',messages:history,temperature:.7,max_tokens:1500,stream:false})});
       const result=await response.json(); const choice=result.choices?.[0]?.message?.content || 'Provider returned an empty reply.';
@@ -204,7 +214,7 @@
   $('clear-btn').addEventListener('click',()=>{history=[];$('chatbox').innerHTML='<div class="empty"><span class="spark">✧</span><b>Your chat starts here</b><br>Ask a question, write code, explain a topic, or brainstorm an idea.</div>';setStatus('chat-status','Chat cleared.');});
   $('image-btn').addEventListener('click',async()=>{
     const prompt=$('image-prompt').value.trim(); if(!prompt){setStatus('image-status','Enter an image prompt first.','bad');return;}
-    $('image-btn').disabled=true;$('image-btn').innerHTML='<span class="spinner"></span>Trying image providers…';$('image-result').replaceChildren();setStatus('image-status','Trying real g4f image adapters; this may take a while.');
+    $('image-btn').disabled=true;$('image-btn').innerHTML='<span class="spinner"></span>Calling selected image route…';$('image-result').replaceChildren();setStatus('image-status','Calling only the selected image route; no second model will be attempted.');
     try {
       const response=await api('/v1/images/generations',{method:'POST',body:JSON.stringify({prompt,model:$('image-model').value,size:$('image-size').value,response_format:'url',n:1})});
       const data=await response.json();const item=data.data?.[0]||{};const result=$('image-result');
@@ -212,12 +222,12 @@
       else if(item.b64_json){const img=document.createElement('img');img.src=`data:image/png;base64,${item.b64_json}`;img.alt=prompt;result.appendChild(img);}
       else {result.textContent='Provider responded without a usable image URL.';}
       setStatus('image-status',`Image result returned by ${data.model || 'g4f'}.`,'good');
-    } catch(error){setStatus('image-status',`Image failed: ${error.message}`,'bad');const note=document.createElement('div');note.className='notice bad';note.textContent='No actual image was generated. Try again later; keyless image routes are not always online.';$('image-result').appendChild(note);}
+    } catch(error){setStatus('image-status',`Image failed: ${error.message}`,'bad');const note=document.createElement('div');note.className='notice bad';note.textContent='No actual image was generated. The selected image route failed; no second model was tried.';$('image-result').appendChild(note);}
     finally{$('image-btn').disabled=false;$('image-btn').textContent='Generate image ✧';}
   });
   $('video-btn').addEventListener('click',async()=>{
     const prompt=$('video-prompt').value.trim();if(!prompt){setStatus('video-status','Enter a video prompt first.','bad');return;}
-    $('video-btn').disabled=true;$('video-btn').innerHTML='<span class="spinner"></span>Checking real video support…';$('video-result').replaceChildren();setStatus('video-status','Checking whether a verified keyless video provider is currently available.');
+    $('video-btn').disabled=true;$('video-btn').innerHTML='<span class="spinner"></span>Checking real video support…';$('video-result').replaceChildren();setStatus('video-status','Checking one video route only; no fallback model will be attempted.');
     try {
       const response=await api('/v1/video/generate',{method:'POST',body:JSON.stringify({prompt,model:'auto',aspect_ratio:$('video-ratio').value,image_url:$('video-image-url').value.trim()||null})});
       const data=await response.json();const url=data.video_url||data.url;

@@ -32,7 +32,8 @@ Blackbox|gpt-4o-mini|text
 def test_health_payload_does_not_require_g4f_installed():
     payload = main._health_info()
     assert payload["status"] == "ok"
-    assert payload["commercial_api_keys_required"] is False
+    assert payload["official_api_keys_supported"] is True
+    assert payload["official_provider_count"] >= 7
     assert isinstance(payload["g4f_installed"], bool)
 
 
@@ -182,3 +183,74 @@ def test_failed_requested_model_does_not_fallback(monkeypatch):
         assert exc.detail["requested_model"] == "Cloudflare|model-a"
         assert exc.detail["fallback_used"] is False
         assert "No other model was tried" in exc.detail["message"]
+
+
+
+def test_catalog_contains_requested_providers_and_explicit_routes(monkeypatch):
+    for key in ("OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY", "XAI_API_KEY", "META_MODEL_API_KEY", "MODEL_API_KEY", "DEEPSEEK_API_KEY", "PERPLEXITY_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(main, "_fetch_catalog_sync", lambda: ([], None, "network unavailable"))
+    main._cache.update({"at": 0, "rows": [], "source": None, "error": None})
+    data = run(main.catalog(refresh=True))
+    ids = {row["id"] for row in data["rows"]}
+    assert "OpenAI API|gpt-6-astra" in ids
+    assert "Gemini API|gemini-3.8-flash" in ids
+    assert "Claude API|claude-sonnet-4-6" in ids
+    assert "xAI Grok API|grok-4.7" in ids
+    assert "Meta Model API|muse-spark" in ids
+    assert "DeepSeek API|deepseek-chat" in ids
+    assert "Perplexity API|sonar-pro" in ids
+    assert "Ollama Local|llama3.3" in ids
+    assert "g4f:ChatGPT|gpt-4o" in ids
+
+
+def test_official_missing_key_returns_error_and_never_falls_back(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    try:
+        run(main._generate_chat("Gemini API|gemini-3.8-flash", [{"role": "user", "content": "hi"}], 0.7, 100))
+        assert False, "missing Gemini key should fail before calling any provider"
+    except HTTPException as exc:
+        assert exc.status_code == 424
+        assert exc.detail["error"] == "provider_credentials_missing"
+        assert exc.detail["fallback_used"] is False
+        assert "no other provider was tried" in exc.detail["message"].lower()
+
+
+def test_official_route_calls_only_the_requested_provider(monkeypatch):
+    calls = []
+    async def fake_run(fn, *args, timeout):
+        calls.append((fn.__name__, args))
+        return "answer from selected provider"
+    monkeypatch.setattr(main, "_run_g4f_thread", fake_run)
+    async def go():
+        return await main._generate_chat("Gemini API|gemini-3.8-flash", [{"role": "user", "content": "hi"}], 0.4, 120)
+    result = run(go())
+    assert result[0] == "answer from selected provider"
+    assert result[1] == "gemini-3.8-flash"
+    assert result[2] == "Gemini API"
+    assert len(calls) == 1
+    assert calls[0][0] == "call_official_chat"
+    assert calls[0][1][0] == "Gemini API"
+
+
+def test_requested_g4f_catalog_rows_are_namespaced_explicitly():
+    rows = main.parse_working_results("Gemini|gemini-2.5-flash|text")
+    assert len(rows) == 1
+    assert rows[0]["id"] == "g4f:Gemini|gemini-2.5-flash"
+    assert rows[0]["route_kind"] == "g4f_community"
+
+
+
+def test_provider_catalog_live_list_filters_non_chat_models(monkeypatch):
+    import provider_catalog
+    class FakeResponse:
+        ok = True
+        def json(self):
+            return {"data": [
+                {"id": "gpt-6-astra"}, {"id": "text-embedding-3-small"},
+                {"id": "gpt-image-2"}, {"id": "gpt-5.5"}, {"id": "whisper-1"},
+            ]}
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy-test-key")
+    monkeypatch.setattr(provider_catalog.requests, "get", lambda *args, **kwargs: FakeResponse())
+    assert provider_catalog._live_model_ids("OpenAI API") == ["gpt-5.5", "gpt-6-astra"]

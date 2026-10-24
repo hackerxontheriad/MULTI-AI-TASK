@@ -1,14 +1,16 @@
-# Changelog — v14.1
+# Changelog
 
-This package replaces the two supplied MULTI-AI-TASK ZIP versions with one consistent project layout.
+## v15.0.0 — 2026-10-24
 
-- Replaced fixed provider-name claims with a live `g4f-working` provider/model catalog and a small fallback list.
-- Removed direct OpenRouter/KiloCode aliases; no commercial provider API keys are configured.
-- Added `/health`, `/v1/status`, `/v1/catalog`, `/v1/catalog/refresh`, `/v1/models`, chat, image, and video endpoints.
-- Added a phone-friendly web UI with Chat, Image, and Video tabs, live catalog counts, diagnostics, and optional app token input.
-- Replaced the old fake-video success behavior (a downloaded sample MP4 or fabricated MP4 header) with capability detection and an honest HTTP 503 when no real keyless video API is available.
-- Added a Dockerfile with Chromium and browser system dependencies for providers that use browser automation.
-- Added optional app-token protection for generation endpoints and bounded provider-worker capacity.
-- Added offline unit tests and a network smoke test.
+- Added curated official API routes for OpenAI, Gemini, Claude, xAI Grok, Meta Model API, DeepSeek and Perplexity.
+- Added provider-native model-list discovery when that provider's server-side key is configured.
+- Added local Ollama routes for Llama/Qwen/Mistral and other installed local chat models.
+- Added clearly marked community presets for ChatGPT web, Gemini, Claude, Grok, MetaAI and other g4f adapters.
+- Enforced single-route behavior for text, image and video: no gateway-level model/provider fallback.
+- Explicit g4f provider selection now returns an error if that adapter is missing instead of allowing g4f to choose another provider.
+- Updated UI labels, server-side credential guidance, tests, docs and validation artifacts.
 
-The wrapper does not guarantee that any public provider will work on a given day. Live generation has to be tested in the target environment with internet access and a working g4f install.
+## v14.1.0
+
+- Single-model text route behavior; requested provider/model failures returned without gateway-level fallback.
+- Mobile UI, keyless-community catalog, image experiments and conservative video capability checks.

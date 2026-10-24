@@ -1,7 +1,7 @@
-"""MadEx Free Multi-AI Hub.
+"""MADEX Single-Model AI Hub.
 
-Uses GPT4Free (g4f) provider adapters. No commercial model API key is configured
-or required by this wrapper. Public providers are unofficial and may fail.
+Official providers are called through their APIs when server-side keys are set.
+Community GPT4Free (g4f) adapters are experimental. Each request uses one route.
 """
 from __future__ import annotations
 
@@ -23,6 +23,9 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
+from provider_catalog import (
+    STATIC_MODELS, ProviderCredentialsMissing, call_official_chat, get_runtime_provider_catalog,
+)
 
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "static"
@@ -35,15 +38,14 @@ os.environ.setdefault("CHROME_BIN", os.getenv("CHROME_BIN", "/usr/bin/chromium")
 os.environ.setdefault("CHROMIUM_PATH", os.getenv("CHROMIUM_PATH", "/usr/bin/chromium"))
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
-log = logging.getLogger("madex-free-ai")
+log = logging.getLogger("madex-single-model-ai")
 
-APP_NAME = "MadEx Free Multi-AI Hub"
-VERSION = "14.1.0"
+APP_NAME = "MadEx Single-Model AI Hub"
+VERSION = "15.0.0"
 CATALOG_TTL = max(60, int(os.getenv("CATALOG_TTL_SECONDS", "900")))
 REQUEST_TIMEOUT = max(15, int(os.getenv("G4F_REQUEST_TIMEOUT", "60")))
 G4F_MAX_WORKERS = min(8, max(1, int(os.getenv("G4F_MAX_WORKERS", "4"))))
 G4F_EXECUTOR = ThreadPoolExecutor(max_workers=G4F_MAX_WORKERS, thread_name_prefix="g4f-worker")
-FALLBACK_LIMIT = min(8, max(1, int(os.getenv("G4F_FALLBACK_LIMIT", "4"))))
 CATALOG_URLS = [
     item.strip()
     for item in os.getenv(
@@ -61,7 +63,7 @@ ALLOWED_TYPES = {"text", "image", "video", "audio"}
 app = FastAPI(
     title=APP_NAME,
     version=VERSION,
-    description="Free-mode multi-provider gateway using g4f; provider availability is not guaranteed.",
+    description="Single-route multi-provider gateway: official APIs, local Ollama, and experimental g4f adapters.",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -152,11 +154,15 @@ def parse_working_results(raw: str) -> list[dict[str, str]]:
             continue
         seen.add(key)
         rows.append({
-            "id": f"{provider}|{model}",
+            "id": f"g4f:{provider}|{model}",
             "provider": provider,
+            "route_provider": f"g4f:{provider}",
             "model": model,
             "type": kind,
             "verified_by": "g4f-working",
+            "route_kind": "g4f_community",
+            "auth_required": None,
+            "availability": "community-reported; not guaranteed to work on every request",
         })
     return rows
 
@@ -185,15 +191,27 @@ async def get_catalog(refresh: bool = False) -> dict[str, Any]:
         if not refresh and _cache["rows"] and now - float(_cache["at"]) < CATALOG_TTL:
             return dict(_cache)
         rows, source, error = await asyncio.to_thread(_fetch_catalog_sync)
-        # Even when the list host is unreachable, `auto` remains a real g4f
-        # routing attempt. It is a fallback entry, not a claim of live success.
+        # The static official catalog makes all major providers visible even when
+        # the community list is offline. Each official route states whether its key
+        # is configured; choosing it never silently switches to another provider.
         visible_rows = list(rows)
-        if not any(row["type"] == "text" for row in visible_rows):
+        visible_rows.extend(await asyncio.to_thread(get_runtime_provider_catalog))
+        if not any(row["id"] == "auto|auto" for row in visible_rows):
             visible_rows.insert(0, {
-                "id": "auto|auto", "provider": "Auto", "model": "auto",
-                "type": "text", "verified_by": "g4f fallback (not live-verified)",
+                "id": "auto|auto", "provider": "Auto · one g4f route", "model": "auto",
+                "type": "text", "verified_by": "g4f Auto route (not live-verified)",
+                "route_kind": "g4f_auto", "auth_required": None,
+                "availability": "one g4f Auto call; upstream provider behavior can vary",
             })
-        result = {"at": now, "rows": visible_rows, "source": source, "error": error}
+        # Keep unique route IDs if a community list starts echoing one of our presets.
+        deduped: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        for row in visible_rows:
+            row_id = row.get("id")
+            if row_id and row_id not in seen_ids:
+                seen_ids.add(row_id)
+                deduped.append(row)
+        result = {"at": now, "rows": deduped, "source": source, "error": error}
         _cache.update(result)
         return dict(_cache)
 
@@ -253,8 +271,11 @@ def _client_chat_once(model: str, messages: list[dict[str, Any]], provider_name:
         "max_tokens": max_tokens,
         "web_search": False,
     }
-    provider = _resolve_provider(provider_name)
-    if provider is not None:
+    clean_provider = provider_name.split(":", 1)[-1] if provider_name and provider_name.startswith("g4f:") else provider_name
+    provider = _resolve_provider(clean_provider)
+    if clean_provider and clean_provider.lower() != "auto":
+        if provider is None:
+            raise RuntimeError(f"Selected g4f adapter '{clean_provider}' is not installed/exported in this environment")
         kwargs["provider"] = provider
     # Keep compatibility with provider/client versions that don't accept every
     # optional argument. Don't silently swap to a paid API: g4f remains gateway.
@@ -323,15 +344,26 @@ async def _generate_chat(requested_model: str, messages: list[dict[str, Any]], t
     model, provider = candidates[0]  # exactly one model/provider attempt per request
     label = f"{provider}|{model}" if provider else model
     try:
-        text = await _run_g4f_thread(
-            _client_chat_once, model, messages, provider, temperature, max_tokens, timeout=REQUEST_TIMEOUT
-        )
+        if provider in STATIC_MODELS:
+            text = await _run_g4f_thread(
+                call_official_chat, provider, model, messages, temperature, max_tokens,
+                REQUEST_TIMEOUT, timeout=REQUEST_TIMEOUT,
+            )
+        else:
+            text = await _run_g4f_thread(
+                _client_chat_once, model, messages, provider, temperature, max_tokens, timeout=REQUEST_TIMEOUT
+            )
         return text, model, provider, []
     except asyncio.TimeoutError:
         reason = f"timed out after {REQUEST_TIMEOUT}s"
+    except ProviderCredentialsMissing as exc:
+        raise HTTPException(status_code=424, detail={
+            "error": "provider_credentials_missing", "requested_model": label,
+            "message": str(exc), "fallback_used": False,
+        }) from exc
     except Exception as exc:
-        reason = f"{type(exc).__name__}: {str(exc)[:180]}"
-        log.info("requested g4f model failed: %s (%s)", label, reason)
+        reason = f"{type(exc).__name__}: {str(exc)[:300]}"
+        log.info("requested provider/model failed: %s (%s)", label, reason)
     raise HTTPException(
         status_code=502,
         detail={
@@ -389,41 +421,33 @@ def _client_image_once(model: str, prompt: str, size: Optional[str], response_fo
 
 
 async def _generate_image(req: ImageRequest) -> dict[str, Any]:
-    catalog = await get_catalog()
-    rows = [row for row in catalog["rows"] if row["type"] == "image"]
-    candidates: list[str] = []
-    if req.model.lower() not in {"auto", "default"}:
-        candidates.append(req.model)
-    candidates.extend(row["model"] for row in rows)
-    # These are experiments, not advertised as verified. g4f providers have
-    # historically supported Flux/Pollinations image routes, but availability varies.
-    candidates.extend(["flux", "flux-dev", "pollinations"])
-    clean: list[str] = []
-    for item in candidates:
-        if item and item not in clean and not _is_router("", item):
-            clean.append(item)
-    errors: list[str] = []
-    for model in clean[:5]:
-        try:
-            image = await _run_g4f_thread(
-                _client_image_once, model, req.prompt, req.size, req.response_format, timeout=REQUEST_TIMEOUT
-            )
-            return {"image": image, "model": model, "attempts": len(errors)}
-        except asyncio.TimeoutError:
-            errors.append(f"{model}: timeout")
-        except Exception as exc:
-            errors.append(f"{model}: {type(exc).__name__}: {str(exc)[:120]}")
-            log.info("g4f image candidate failed: %s", model)
+    """Attempt one selected image model only; no provider/model fallback chain."""
+    requested = (req.model or "auto").strip()
+    if _is_router("", requested):
+        raise HTTPException(status_code=400, detail={"error": "requested_model_blocked", "requested_model": requested})
+    # Auto means one g4f Auto call, not iterating through a list of image models.
+    model = "auto" if requested.lower() in {"auto", "default"} else requested
+    try:
+        image = await _run_g4f_thread(
+            _client_image_once, model, req.prompt, req.size, req.response_format, timeout=REQUEST_TIMEOUT
+        )
+        return {"image": image, "model": model, "attempts": 0}
+    except asyncio.TimeoutError:
+        reason = f"timed out after {REQUEST_TIMEOUT}s"
+    except Exception as exc:
+        reason = f"{type(exc).__name__}: {str(exc)[:250]}"
+        log.info("requested image model failed: %s (%s)", model, reason)
     raise HTTPException(
         status_code=502,
         detail={
-            "error": "no_free_image_provider_worked",
-            "message": "No real no-key g4f image provider generated an image for this request.",
-            "attempts": errors[-5:],
-            "help": "Image providers are more volatile than text providers. Check /v1/catalog; the app never substitutes a sample image.",
+            "error": "requested_image_model_failed",
+            "requested_model": model,
+            "message": f"Requested image model '{model}' failed. No other model was tried.",
+            "reason": reason,
+            "fallback_used": False,
+            "fake_media": False,
         },
     )
-
 
 async def require_access_token(authorization: Optional[str] = Header(default=None)) -> None:
     """Optional app-level token. This is not a model-provider API key."""
@@ -455,9 +479,11 @@ def _health_info() -> dict[str, Any]:
         "g4f_version": g4f_version,
         "chromium_found": bool(chrome_path),
         "chromium_path": chrome_path,
-        "free_mode": True,
-        "commercial_api_keys_required": False,
-        "note": "Health OK does not mean each public provider is currently working.",
+        "community_routes_can_be_keyless": True,
+        "official_api_keys_supported": True,
+        "official_provider_count": len(STATIC_MODELS),
+        "configured_official_providers": [name for name in STATIC_MODELS if name != "Ollama Local" and any(os.getenv(key, "").strip() for key in STATIC_MODELS[name].get("key_env", ()))],
+        "note": "Health OK does not prove model availability. Official API routes need their provider keys; community routes are experimental.",
     }
 
 
@@ -490,17 +516,20 @@ async def catalog(refresh: bool = False):
         "counts": counts,
         "rows": rows,
         "catalog_warning": data["error"],
-        "policy": "OpenRouter/KiloCode aliases excluded; entries are community-reported and not guaranteed for your next request.",
+        "policy": "Single-route mode: official API presets call only their own provider; community presets are experimental; no model fallback is attempted.",
+        "route_kinds": {"official_api": "requires configured provider key", "local": "requires local service", "g4f_community": "experimental adapter; may be unavailable or require sessions", "g4f_auto": "one upstream Auto call"},
     }
 
 
 @app.get("/v1/models")
 async def models():
     data = await get_catalog()
-    unique: dict[str, dict[str, Any]] = {"auto": {"id": "auto", "object": "model", "owned_by": "g4f-keyless-fallback", "type": "text"}}
+    unique: dict[str, dict[str, Any]] = {"auto": {"id": "auto", "object": "model", "owned_by": "g4f-single-route", "type": "text"}}
     for row in data["rows"]:
         unique.setdefault(row["id"], {
-            "id": row["id"], "object": "model", "owned_by": row["provider"], "type": row["type"]
+            "id": row["id"], "object": "model", "owned_by": row["provider"], "type": row["type"],
+            "route_kind": row.get("route_kind"), "auth_required": row.get("auth_required"),
+            "auth_configured": row.get("auth_configured"), "availability": row.get("availability"),
         })
     return {"object": "list", "data": list(unique.values())}
 
@@ -571,10 +600,9 @@ async def image_generate(req: ImageRequest, _: None = Depends(require_access_tok
 @app.post("/v1/video/generate")
 async def video_generate(req: VideoRequest, _: None = Depends(require_access_token)):
     data = await get_catalog()
-    rows = [row for row in data["rows"] if row["type"] == "video"]
-    # The installed g4f client currently documents chat/images methods, not a
-    # stable cross-provider videos.generate API. Do not pass off sample videos
-    # or fabricated MP4 headers as generated work.
+    rows = [row for row in data["rows"] if row["type"] == "video" and row.get("verified_by") == "g4f-working"]
+    # g4f may not provide a stable videos.generate endpoint. If there is one,
+    # use exactly the explicitly selected row or one Auto-selected row; never loop.
     try:
         from g4f.client import Client
         client = Client()
@@ -582,36 +610,44 @@ async def video_generate(req: VideoRequest, _: None = Depends(require_access_tok
         generate = getattr(videos_api, "generate", None) if videos_api is not None else None
     except Exception:
         generate = None
-    if not rows or not callable(generate):
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": "no_verified_keyless_video_provider",
-                "message": "No working no-auth video provider with a supported g4f video API is listed right now.",
-                "catalog_video_entries": len(rows),
-                "next_step": "Refresh the catalog later or add an authorized video provider. Text/image capability does not imply video capability.",
-                "fake_media": False,
-            },
+    if not callable(generate) or not rows:
+        raise HTTPException(status_code=503, detail={
+            "error": "no_verified_keyless_video_provider",
+            "message": "No working no-auth video provider with a supported g4f video API is listed right now.",
+            "catalog_video_entries": len(rows),
+            "next_step": "Refresh the catalog later or configure a real authorized/local video provider.",
+            "fake_media": False, "fallback_used": False,
+        })
+    requested = (req.model or "auto").strip()
+    if requested.lower() in {"auto", "default"}:
+        selected = rows[0]
+    else:
+        matching = [r for r in rows if requested in {r.get("id"), r.get("model"), f"{r.get('provider')}|{r.get('model')}", f"g4f:{r.get('provider')}|{r.get('model')}"}]
+        if not matching:
+            raise HTTPException(status_code=400, detail={"error": "requested_video_model_not_listed", "requested_model": requested, "fallback_used": False})
+        selected = matching[0]
+    try:
+        kwargs = {"model": selected["model"], "prompt": req.prompt, "aspect_ratio": req.aspect_ratio}
+        if req.image_url:
+            kwargs["image_url"] = req.image_url
+        loop = asyncio.get_running_loop()
+        response = await asyncio.wait_for(
+            loop.run_in_executor(G4F_EXECUTOR, functools.partial(generate, **kwargs)), timeout=REQUEST_TIMEOUT * 3
         )
-    # Future-compatible code path: only attempts a video API after g4f exposes it
-    # and the daily list reports at least one no-auth video provider.
-    last_error = None
-    for row in rows[:3]:
-        try:
-            kwargs = {"model": row["model"], "prompt": req.prompt, "aspect_ratio": req.aspect_ratio}
-            if req.image_url:
-                kwargs["image_url"] = req.image_url
-            # Submit through the bounded executor; timeout still cannot forcibly stop
-            # a provider library's own blocking call, but worker count stays capped.
-            loop = asyncio.get_running_loop()
-            response = await asyncio.wait_for(loop.run_in_executor(G4F_EXECUTOR, functools.partial(generate, **kwargs)), timeout=REQUEST_TIMEOUT * 3)
-            output = _extract_media_url(response)
-            if output:
-                return {"status": "success", "id": uuid.uuid4().hex, "model": row["model"], "provider": row["provider"], "video_url": output}
-        except Exception as exc:
-            last_error = f"{type(exc).__name__}: {str(exc)[:160]}"
-    raise HTTPException(status_code=502, detail={"error": "video_provider_failed", "message": "All listed no-auth video providers failed.", "last_error": last_error, "fake_media": False})
-
+        output = _extract_media_url(response)
+        if output:
+            return {"status": "success", "id": uuid.uuid4().hex, "model": selected["model"],
+                    "provider": selected["provider"], "video_url": output, "fallback_used": False}
+        reason = "provider returned no usable video URL"
+    except asyncio.TimeoutError:
+        reason = f"timed out after {REQUEST_TIMEOUT * 3}s"
+    except Exception as exc:
+        reason = f"{type(exc).__name__}: {str(exc)[:200]}"
+    raise HTTPException(status_code=502, detail={
+        "error": "requested_video_model_failed",
+        "message": f"Requested video route '{selected['provider']}|{selected['model']}' failed. No other model was tried.",
+        "reason": reason, "fallback_used": False, "fake_media": False,
+    })
 
 def _extract_media_url(response: Any) -> Optional[str]:
     if isinstance(response, str):
@@ -640,7 +676,7 @@ async def status():
         "catalog_source": data["source"],
         "catalog_counts": counts,
         "feature_status": {
-            "text": "available if at least one keyless provider is responding",
+            "text": "official API routes, local Ollama, and experimental community routes; selection is single-route",
             "image": "experimental; actual provider must respond",
             "video": "unavailable until the live catalog and installed g4f expose a no-auth video provider",
         },

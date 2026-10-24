@@ -1,21 +1,23 @@
-MadEx Free Multi-AI Hub v14.1 — validation record (22 October 2026)
+MADEX Single-Model AI Hub v15.0.0 — validation record (24 October 2026)
 
 PASS
-- `python -m compileall -q main.py tests test_universal.py`
-- `pytest -q`: 13 tests passed.
-- JavaScript parser check: `node --check` passed for the frontend script.
-- Uvicorn server started locally and returned HTTP 200 for `/`, `/health`, `/v1/status`, `/v1/catalog`, `/v1/models`, and `/docs`.
-- `python test_universal.py`: smoke check passed for the six endpoints above.
-- OpenAPI JSON loaded successfully and contained the documented API paths.
-- With g4f intentionally absent in the validation container, POST chat returned a controlled HTTP 502 (`no_free_provider_worked`), image returned controlled HTTP 502 (`no_free_image_provider_worked`), and video returned HTTP 503 (`no_verified_keyless_video_provider`, `fake_media=false`). These are expected diagnostics when the core g4f library/provider is unavailable, not successful AI generation.
+- `python -m py_compile main.py provider_catalog.py`
+- `python -m compileall -q main.py provider_catalog.py tests test_universal.py`
+- `pytest -q`: 20 tests passed. Tests are offline/mocked; no provider credits were used.
+- `node --check` passed for the extracted frontend JavaScript.
+- Local Uvicorn smoke test returned HTTP 200 for `/`, `/health`, `/v1/status`, `/v1/catalog`, `/v1/models` and `/docs`.
+- Test catalog exposed the requested OpenAI, Gemini, Claude, Grok, Meta Model API, DeepSeek, Perplexity, Ollama and ChatGPT-community selections.
+- A request for a selected official Gemini model without its server-side key returned HTTP 424 (`provider_credentials_missing`) and `fallback_used=false`.
+- Catalog smoke test produced 68 text model/provider entries in the keyless test environment. Most are official presets or marked experimental community routes, not assertions that the upstream model is live or free.
 
 Not verified in this environment
-- `g4f` is not installed in the validation container; therefore live text inference and real image/video generation were not claimed as tested.
-- The container couldn't fetch the live `g4f-working` raw catalog at runtime; it correctly fell back to the Auto route. A current web read of that upstream report showed text entries but no verified image/video rows.
-- `docker` executable is not installed in the validation container, so the Docker image was not built here.
+- No official provider API key was used for generation. Live billing, model access, quotas and current account-specific model availability were not tested.
+- The live g4f community catalog was intentionally disabled during HTTP smoke testing. Community adapter availability and real chat/image/video inference were not certified.
+- The Meta preset IDs should be compared with the model IDs displayed by the operator's Meta Model API dashboard; if a key is configured, the live model-list endpoint is queried and its returned IDs are appended.
+- Docker image was not built in this validation pass.
 
 Expected limitations
-- Public no-auth providers are unofficial, change often, can require browser helpers, and can fail/rate-limit.
-- Image mode attempts actual g4f image adapters but may return HTTP 502 if none works.
-- Video returns HTTP 503 unless both the live no-auth catalog and installed g4f client expose a real video route. No sample or fabricated MP4 is returned.
-- Chromium exists in the local validation environment and is installed in the Dockerfile, but its presence alone does not guarantee every g4f provider can run.
+- Official API keys may incur charges, and provider model IDs/availability can change.
+- Community g4f adapters are unofficial; they may be offline, require a session/browser or fail after upstream changes.
+- `Auto` is one call into g4f's Auto route. Any internal behavior within that upstream library is outside the gateway's control; choosing an exact provider row offers stricter routing control.
+- Image and video routes are experimental. They return errors instead of silently trying another model or fabricating output.

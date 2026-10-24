@@ -1,38 +1,44 @@
 {
-  "name": "MadEx Free Multi-AI Hub",
-  "version": "14.1.0",
-  "created_on": "2026-10-22",
-  "purpose": "Free-mode g4f adapter wrapper; no paid model API credentials configured",
+  "name": "MADEX Single-Model AI Hub",
+  "version": "15.0.0",
+  "created_on": "2026-10-24",
+  "purpose": "Single-route AI gateway with official API integrations, local Ollama support, and explicitly experimental g4f community adapters.",
   "features": [
-    "text chat",
-    "experimental image generation",
-    "video capability detection",
-    "dynamic keyless catalog",
-    "auto fallback",
-    "mobile web UI",
-    "Docker/Render configs",
-    "offline tests"
+    "single-provider/single-model routing for each request",
+    "OpenAI Responses API adapter",
+    "Google Gemini generateContent API adapter",
+    "Anthropic Claude Messages API adapter",
+    "xAI Grok API adapter",
+    "Meta Model API adapter",
+    "DeepSeek API adapter",
+    "Perplexity API adapter",
+    "local Ollama adapter for user-installed models",
+    "provider-native live model discovery when server-side keys are configured",
+    "experimental g4f community presets and live community catalog",
+    "image generation one-route behavior",
+    "conservative video capability checks with no fabricated media",
+    "mobile UI, Docker/Render configs, offline tests"
   ],
   "files": [
     {
       "path": ".dockerignore",
-      "bytes": 54,
-      "sha256": "38c571d119e3c63bf9e1dd1604e062094f5c53beaf695ba5cef209c19459c724"
+      "bytes": 52,
+      "sha256": "37108d528a21542f646ba7544000560efeed4344274535e706d00c5fecf518e8"
     },
     {
       "path": ".env.example",
-      "bytes": 640,
-      "sha256": "81b489ac5e671294ddf3071d2290888522f05cc746c6c1a596b83aef8dddf15a"
+      "bytes": 925,
+      "sha256": "70922c909c5ddf2a31e7fdbbac0e3d547c10da15d966655f97a2c90d9bfd2eb1"
     },
     {
       "path": ".gitignore",
       "bytes": 140,
-      "sha256": "aee5c92896d69057d81a318aa4f974fb919c9c48663324281c68f6afcfef5690"
+      "sha256": "1f92d10f0152266e4ae2378747c8a99da6c1760d6584b397e1e2d60d56fa767a"
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 1229,
-      "sha256": "f2e6aa6325eb705c2bd5dfbb0f951bac2ac40559a1f9d5cc28524af78444573e"
+      "bytes": 1005,
+      "sha256": "58c5c94c68722e0c4194558cadbfb064b2569c45e2124e36dd4327bc34ecb6bf"
     },
     {
       "path": "Dockerfile",
@@ -51,13 +57,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 8376,
-      "sha256": "bccbb6d9d4f92d7ee141b28d544aa84306b749062fac8bb2d846c2b40b934a99"
+      "bytes": 8222,
+      "sha256": "041153846fad325b1db9ea9308a247fbd081dab9181580539b0d571906fbe811"
     },
     {
       "path": "VALIDATION.txt",
-      "bytes": 1965,
-      "sha256": "da942c41ee097838f162ff4defb765154731f4a1eb8288df9291f7fc57a2f8bf"
+      "bytes": 2182,
+      "sha256": "5e8beca5ea96f5871188be04432add96b30a4fbf1c8f199eab405b32a43db937"
     },
     {
       "path": "generated_images/.gitkeep",
@@ -71,8 +77,13 @@
     },
     {
       "path": "main.py",
-      "bytes": 28216,
-      "sha256": "ba010959e22613e066c442cb6c2dda0f8dccf47e9341c005bc31e1720df0035d"
+      "bytes": 30345,
+      "sha256": "180b736d853337dc4e3d797450eaaf03ffa1ede29a04f9760e5c6ec970619519"
+    },
+    {
+      "path": "provider_catalog.py",
+      "bytes": 20680,
+      "sha256": "f0a4ca77ba0ff627870780f63002acd6841ece47ee7c8c4708f219895755c7a1"
     },
     {
       "path": "pytest.ini",
@@ -101,8 +112,8 @@
     },
     {
       "path": "static/index.html",
-      "bytes": 30484,
-      "sha256": "778a14b94e5b6b41d80ec2ec552b012c3b40be6053e59e876ff141a4b5ee2a56"
+      "bytes": 31537,
+      "sha256": "2f9f43bb7706157c50f39e9ed28e627780c2c7f5830b670dd49676f60d0f7017"
     },
     {
       "path": "test_universal.py",
@@ -111,9 +122,15 @@
     },
     {
       "path": "tests/test_universal.py",
-      "bytes": 5847,
-      "sha256": "4c7d43250e21fa1d3512afc7241effc11ab8503375ee26988c48d1ad3d454354"
+      "bytes": 10675,
+      "sha256": "5c0c4c823f4fdbd31b770504372b4dd90375709dcb2af8712c1043c27d92f61b"
     }
   ],
-  "live_provider_limitation": "The current upstream keyless report seen during development contained text entries but no verified image/video entries. Public provider availability changes."
+  "limitations": [
+    "Official APIs require their own provider keys and may incur charges.",
+    "Community adapters are unofficial, may require sessions or browsers, and are not guaranteed.",
+    "Visible model IDs do not guarantee access, quota or successful generation.",
+    "Ollama Local requires a reachable Ollama server and a downloaded model.",
+    "ChatGPT web/community routes are experimental; OpenAI API access is distinct from a ChatGPT subscription."
+  ]
 }
