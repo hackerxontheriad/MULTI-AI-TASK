@@ -1,0 +1,7 @@
+# Lite install: every official/free-tier API route + local Ollama. No browser, no g4f.
+# Small, fast to build, and fits 512 MB free hosts.
+fastapi>=0.115.0,<1
+uvicorn[standard]>=0.30.0,<1
+pydantic>=2.8.0,<3
+requests>=2.32.0,<3
+certifi>=2024.8.30

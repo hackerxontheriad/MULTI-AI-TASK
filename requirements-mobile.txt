@@ -1,7 +1,8 @@
-# Android Termux is more suitable than Pydroid for these dependencies.
-# Browser-based g4f providers may still be unsupported on Android.
-fastapi>=0.115.0
-uvicorn>=0.30.0
-pydantic>=2.8.0
-requests>=2.32.0
-g4f[all]>=0.6.0
+# Android Termux is more suitable than Pydroid. Install Chromium with: pkg install chromium
+# Browser-based g4f providers may still be unsupported on Android; the official free-tier routes work.
+fastapi>=0.115.0,<1
+uvicorn>=0.30.0,<1
+pydantic>=2.8.0,<3
+requests>=2.32.0,<3
+certifi>=2024.8.30
+g4f[all]>=0.6.0,<9

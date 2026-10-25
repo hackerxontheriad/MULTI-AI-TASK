@@ -4,3 +4,6 @@ __pycache__
 .pytest_cache
 .env
 *.py[cod]
+tests
+generated_images/*
+generated_media/*

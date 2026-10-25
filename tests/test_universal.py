@@ -35,6 +35,9 @@ def test_health_payload_does_not_require_g4f_installed():
     assert payload["official_api_keys_supported"] is True
     assert payload["official_provider_count"] >= 7
     assert isinstance(payload["g4f_installed"], bool)
+    assert "configured_free_providers" in payload
+    assert "access_token_set" in payload
+    assert not any("key" in str(v).lower() and "sk-" in str(v) for v in payload.values())
 
 
 def test_root_is_a_file_response():
@@ -155,6 +158,12 @@ def test_model_candidates_reject_router_aliases():
 
 
 
+def test_model_candidates_normalizes_whitespace_in_g4f_provider_id():
+    assert main._model_candidates("g4f: GoogleAiMode|gemini-2.5-flash", []) == [
+        ("gemini-2.5-flash", "g4f:GoogleAiMode")
+    ]
+
+
 def test_model_candidates_returns_only_requested_route():
     rows = [
         {"type": "text", "verified_by": "g4f-working", "provider": "Cloudflare", "model": "model-a"},
@@ -202,6 +211,14 @@ def test_catalog_contains_requested_providers_and_explicit_routes(monkeypatch):
     assert "Perplexity API|sonar-pro" in ids
     assert "Ollama Local|llama3.3" in ids
     assert "g4f:ChatGPT|gpt-4o" in ids
+    assert "Groq API|llama-3.3-70b-versatile" in ids
+    assert "Cerebras API|gpt-oss-120b" in ids
+    assert "Mistral API|mistral-small-latest" in ids
+    assert "GitHub Models|openai/gpt-4.1-mini" in ids
+    assert "Hugging Face API|meta-llama/Llama-3.3-70B-Instruct" in ids
+    assert "Cloudflare Workers AI|@cf/meta/llama-3.3-70b-instruct-fp8-fast" in ids
+    assert "Pollinations API|flux" in ids  # real image route
+    assert data["free_route_count"] >= 8
 
 
 def test_official_missing_key_returns_error_and_never_falls_back(monkeypatch):
@@ -222,7 +239,10 @@ def test_official_route_calls_only_the_requested_provider(monkeypatch):
     async def fake_run(fn, *args, timeout):
         calls.append((fn.__name__, args))
         return "answer from selected provider"
-    monkeypatch.setattr(main, "_run_g4f_thread", fake_run)
+    monkeypatch.setattr(main, "_run_official_thread", fake_run)
+    async def g4f_must_not_run(*args, **kwargs):
+        raise AssertionError("g4f must not be used for an official route")
+    monkeypatch.setattr(main, "_run_g4f_thread", g4f_must_not_run)
     async def go():
         return await main._generate_chat("Gemini API|gemini-3.8-flash", [{"role": "user", "content": "hi"}], 0.4, 120)
     result = run(go())
@@ -252,5 +272,5 @@ def test_provider_catalog_live_list_filters_non_chat_models(monkeypatch):
                 {"id": "gpt-image-2"}, {"id": "gpt-5.5"}, {"id": "whisper-1"},
             ]}
     monkeypatch.setenv("OPENAI_API_KEY", "dummy-test-key")
-    monkeypatch.setattr(provider_catalog.requests, "get", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(provider_catalog.http_client, "get", lambda *args, **kwargs: FakeResponse())
     assert provider_catalog._live_model_ids("OpenAI API") == ["gpt-5.5", "gpt-6-astra"]

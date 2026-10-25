@@ -1,23 +1,23 @@
-MADEX Single-Model AI Hub v15.0.0 — validation record (24 October 2026)
+MADEX Single-Model AI Hub v15.2.0 — validation record (25 October 2026)
 
-PASS
-- `python -m py_compile main.py provider_catalog.py`
-- `python -m compileall -q main.py provider_catalog.py tests test_universal.py`
-- `pytest -q`: 20 tests passed. Tests are offline/mocked; no provider credits were used.
-- `node --check` passed for the extracted frontend JavaScript.
-- Local Uvicorn smoke test returned HTTP 200 for `/`, `/health`, `/v1/status`, `/v1/catalog`, `/v1/models` and `/docs`.
-- Test catalog exposed the requested OpenAI, Gemini, Claude, Grok, Meta Model API, DeepSeek, Perplexity, Ollama and ChatGPT-community selections.
-- A request for a selected official Gemini model without its server-side key returned HTTP 424 (`provider_credentials_missing`) and `fallback_used=false`.
-- Catalog smoke test produced 68 text model/provider entries in the keyless test environment. Most are official presets or marked experimental community routes, not assertions that the upstream model is live or free.
+PASS (run in the build sandbox)
+- py_compile of main.py, agents.py, provider_catalog.py, http_client.py, runtime_env.py
+- 66 offline tests pass (tests/test_universal.py, tests/test_providers_and_runtime.py, tests/test_agents.py)
+  NOTE: the sandbox had no network, so FastAPI/pydantic/pytest were replaced by minimal stand-ins to execute the
+  real project code. Run `pytest -q` in a normal environment to confirm against the real libraries.
+- Frontend: `node --check` on the inline JS; executed in real Chromium (Playwright, mobile viewport) against a mocked
+  backend: Agents tab, route picker, result cards (model text rendered as text, not HTML), failed-agent card,
+  council/plan mode toggles, diagnostics panel, grouped model selector, image model list; zero JS errors.
+- scripts/chromium-safe: syntax check + behaviour test with a fake binary (headless on/off by DISPLAY, exit 127 when missing).
+- Adapters (mocked HTTP): Groq/Mistral (OpenAI-compatible), Gemini (key in header, thought parts skipped, MAX_TOKENS error),
+  Anthropic (temperature cap, alternation), OpenAI Responses (incomplete), Cloudflare (account ID validation),
+  Pollinations/Cloudflare images (non-image bytes rejected), Ollama live list, redaction of keys in errors.
 
-Not verified in this environment
-- No official provider API key was used for generation. Live billing, model access, quotas and current account-specific model availability were not tested.
-- The live g4f community catalog was intentionally disabled during HTTP smoke testing. Community adapter availability and real chat/image/video inference were not certified.
-- The Meta preset IDs should be compared with the model IDs displayed by the operator's Meta Model API dashboard; if a key is configured, the live model-list endpoint is queried and its returned IDs are appended.
-- Docker image was not built in this validation pass.
-
-Expected limitations
-- Official API keys may incur charges, and provider model IDs/availability can change.
-- Community g4f adapters are unofficial; they may be offline, require a session/browser or fail after upstream changes.
-- `Auto` is one call into g4f's Auto route. Any internal behavior within that upstream library is outside the gateway's control; choosing an exact provider row offers stricter routing control.
-- Image and video routes are experimental. They return errors instead of silently trying another model or fabricating output.
+NOT VERIFIED
+- No real provider call was made (no keys, no network). Free-tier limits and model IDs can change; IDs marked "verify ID"
+  are presets and are replaced by the provider's live list once a key is configured.
+- Docker image was not built. Chromium inside the image was not launched (the sandbox browser is not the image's browser).
+- Pollinations gen.pollinations.ai and Cloudflare image/chat request shapes follow current docs but were not called live.
+- g4f 8.x community adapters were not exercised; they remain experimental. No patch can guarantee third-party browser providers always start.
+- LiteLLM Proxy and PawanOsman-compatible routes were tested offline for configuration/catalog behavior only; no real endpoints were configured or called.
+- DuckDuckGo AI Chat was not integrated because the project does not rely on an undocumented scraping/reverse-engineered chat endpoint.

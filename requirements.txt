@@ -1,5 +1,8 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.30.0
-pydantic>=2.8.0
-requests>=2.32.0
-g4f[all]>=0.6.0
+# Full install: official/free-tier API routes + community g4f adapters (needs Chromium for browser providers).
+fastapi>=0.115.0,<1
+uvicorn[standard]>=0.30.0,<1
+pydantic>=2.8.0,<3
+requests>=2.32.0,<3
+certifi>=2024.8.30
+# g4f is optional at runtime (the gateway starts without it). Upper bound avoids an unreviewed major bump.
+g4f[all]>=0.6.0,<9

@@ -4,10 +4,51 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /health
+    # Free plans have 512 MB RAM: skip Chromium/g4f and use the free-tier API routes (Groq, Cerebras,
+    # Mistral, Gemini, GitHub Models, Hugging Face, Cloudflare, Pollinations). Docker build args come from
+    # env vars. On a paid plan set INSTALL_BROWSER=1 and REQUIREMENTS_FILE=requirements.txt for g4f.
     envVars:
+      - key: INSTALL_BROWSER
+        value: "0"
+      - key: REQUIREMENTS_FILE
+        value: requirements-lite.txt
       - key: API_ACCESS_TOKEN
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GITHUB_MODELS_TOKEN
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: POLLINATIONS_API_KEY
+        sync: false
+      - key: LITELLM_BASE_URL
+        sync: false
+      - key: LITELLM_API_KEY
+        sync: false
+      - key: LITELLM_MODELS
+        sync: false
+      - key: PAWANOSMAN_BASE_URL
+        sync: false
+      - key: PAWANOSMAN_API_KEY
+        sync: false
+      - key: PAWANOSMAN_MODELS
         sync: false
       - key: G4F_REQUEST_TIMEOUT
         value: "60"
       - key: CATALOG_TTL_SECONDS
         value: "900"
+      - key: RATE_LIMIT_PER_MIN
+        value: "30"
+      - key: TRUST_PROXY
+        value: "1"

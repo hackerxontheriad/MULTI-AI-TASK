@@ -16,9 +16,38 @@
 .chatbox{height:390px;overflow:auto;border:1px solid var(--line);border-radius:16px;background:rgba(4,7,21,.39);padding:13px;display:flex;flex-direction:column;gap:12px;margin-bottom:13px}.empty{margin:auto;text-align:center;max-width:270px;color:var(--muted);font-size:12px;line-height:1.7}.empty .spark{font-size:30px;display:block;margin-bottom:9px}.bubble{max-width:91%;padding:12px 13px;border-radius:15px;font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.user{align-self:flex-end;background:linear-gradient(130deg,rgba(69,113,189,.4),rgba(123,92,207,.34));border:1px solid rgba(146,158,255,.21);border-bottom-right-radius:5px}.bubble.assistant{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid var(--line);border-bottom-left-radius:5px}.bubble .who{display:block;text-transform:uppercase;letter-spacing:1px;font-size:9px;color:var(--cyan);margin-bottom:4px;font-weight:900}.meta{color:var(--muted);font-size:10px;margin-top:5px}.result{margin-top:13px;border:1px solid var(--line);border-radius:14px;background:rgba(5,8,22,.37);padding:14px;min-height:70px}.result:empty{display:none}.result img,.result video{display:block;width:100%;max-height:480px;object-fit:contain;border-radius:10px;background:#050713}.result a{color:var(--cyan);overflow-wrap:anywhere}.notice{padding:11px 12px;border:1px solid rgba(255,213,139,.2);background:rgba(151,99,20,.1);border-radius:12px;color:#f5dba5;font-size:11px;line-height:1.6;margin:12px 0}.notice.good{border-color:rgba(96,232,179,.2);background:rgba(36,132,100,.1);color:#a3f2d5}.notice.bad{border-color:rgba(255,142,166,.24);background:rgba(126,28,53,.15);color:#ffb2c0}.hidden{display:none!important}
 .side-stack{display:flex;flex-direction:column;gap:14px}.side-body{padding:16px}.provider-list{display:flex;flex-direction:column;gap:9px}.provider-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border:1px solid rgba(165,180,235,.12);border-radius:12px;background:rgba(255,255,255,.025)}.provider-item strong{font-size:12px;font-weight:750}.provider-item span{display:block;font-size:10px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}.chip{border-radius:99px;font-size:9px;padding:5px 8px;border:1px solid var(--line);color:#b9c5ef;white-space:nowrap}.chip.good{border-color:rgba(96,232,179,.25);color:#99f4d1}.chip.warn{border-color:rgba(255,213,139,.25);color:var(--warn)}.rule{height:1px;background:var(--line);margin:14px 0}.links{display:flex;gap:8px;flex-wrap:wrap}.link{color:#b5c8ff;text-decoration:none;font-size:11px;padding:7px 9px;border:1px solid var(--line);border-radius:9px}.link:hover{border-color:var(--cyan)}.footer{text-align:center;color:#7380a9;font-size:10px;margin-top:24px;line-height:1.8}.footer a{color:#a4b4ef}.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:860px){.layout{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.hero-actions{width:100%}.status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.side-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.wrap{padding:16px 12px 30px}.top{align-items:flex-start}.brand h1{font-size:15px}.logo{width:42px;height:42px}.live{font-size:10px;padding:8px}.hero{margin:23px 0 18px}.hero h2{letter-spacing:-.8px}.hero p{font-size:13px}.status-card{padding:12px}.status-card strong{font-size:17px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.tab{padding:10px 6px}.panel-head{align-items:flex-start;flex-direction:column}.panel-body{padding:13px}.row{flex-direction:column;gap:0}.chatbox{height:340px}.bubble{max-width:96%}.side-stack{grid-template-columns:1fr}.hero-actions .btn{flex:1}}
+
+/* ---- v15.1 agents + diagnostics + toasts ---- */
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;max-height:240px;overflow:auto;padding:4px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.02)}
+.pick{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid rgba(165,180,235,.12);border-radius:11px;background:rgba(255,255,255,.025);cursor:pointer;font-size:12px;line-height:1.35}
+.pick:hover{border-color:var(--cyan)}.pick input{margin-top:2px;accent-color:var(--cyan)}.pick b{display:block;font-size:12px}.pick small{color:var(--muted);font-size:10px;overflow-wrap:anywhere}
+.pick.ready b::after{content:" FREE·READY";color:var(--good);font-size:9px;margin-left:6px}
+.pick.nokey{opacity:.62}
+.mode-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.mode-card{text-align:left;padding:11px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink)}
+.mode-card b{display:block;font-size:13px}.mode-card span{font-size:10.5px;color:var(--muted);line-height:1.35;display:block;margin-top:3px}
+.mode-card.active{border-color:var(--cyan);background:linear-gradient(135deg,rgba(83,227,232,.12),rgba(154,131,255,.12))}
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.agent-card{border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.agent-card.ok{border-color:rgba(96,232,179,.28)}.agent-card.err{border-color:rgba(255,142,166,.35)}
+.agent-card header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.agent-card h4{margin:0;font-size:12px}.agent-card .route{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+.agent-card pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:12.5px;line-height:1.5;max-height:340px;overflow:auto}
+.agent-card .actions{display:flex;gap:6px;flex-wrap:wrap}
+.mini{font-size:10px;padding:5px 9px;border-radius:9px;border:1px solid var(--line);background:transparent;color:#b9c5ef}.mini:hover{border-color:var(--cyan)}
+.final-card{border:1px solid rgba(83,227,232,.4);background:linear-gradient(135deg,rgba(83,227,232,.08),rgba(154,131,255,.1));border-radius:18px;padding:14px;margin-top:12px}
+.stage-title{margin:16px 0 0;font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.err-text{color:var(--bad);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.hint-text{color:var(--warn);font-size:11px}
+.diag{margin-top:12px;display:grid;gap:8px}.diag .provider-item strong{font-size:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1b2347;border:1px solid var(--cyan);color:var(--ink);padding:10px 16px;border-radius:12px;font-size:12px;z-index:50;transition:.25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.progress{height:3px;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink));background-size:200% 100%;animation:slide 1.2s linear infinite;margin-top:10px}
+@keyframes slide{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.progress,.orb{animation:none}}
 </style>
 </head>
 <body>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="orb a"></div><div class="orb b"></div>
 <div class="wrap">
 <header class="top">
@@ -26,9 +55,10 @@
   <div class="live"><span class="dot"></span><span id="live-label">LOCAL UI READY</span></div>
 </header>
 <section class="hero">
-  <div><h2>One hub. <span class="gradient">Every provider, one route.</span></h2><p>Chat, image and video capability checks in one mobile-friendly interface. Choose OpenAI/ChatGPT, Gemini, Claude, Grok, Meta, DeepSeek, Perplexity, local Ollama or experimental community adapters. Official APIs need their own server-side keys; community routes can be unstable.</p></div>
+  <div><h2>One hub. <span class="gradient">Every provider, one route.</span></h2><p>Chat, multi-agent compare/council/planner runs, image and video in one mobile-friendly interface. Pick free-tier APIs (Groq, Cerebras, Mistral, Gemini, GitHub Models, Hugging Face, Cloudflare, Pollinations), local Ollama, paid official APIs or experimental community adapters. Keys live on the server; community routes can be unstable.</p></div>
   <div class="hero-actions"><button class="btn" id="refresh-btn">↻ Refresh model catalog</button><button class="btn" id="health-btn">Run diagnostics</button></div>
 </section>
+<section class="diag hidden" id="diag-panel" aria-live="polite"></section>
 <section class="status-grid" aria-label="Service status">
   <div class="status-card"><div class="eyebrow">Gateway</div><strong id="s-gateway">Checking…</strong><small>Local app health</small></div>
   <div class="status-card"><div class="eyebrow">g4f library</div><strong id="s-g4f">Checking…</strong><small>Installed in the Python environment</small></div>
@@ -41,6 +71,7 @@
     <div><h3>Creative workspace</h3><p>Choose one exact provider/model. A failed request returns an error—MADEX does not switch to another model.</p></div>
     <div class="tabs" role="tablist" aria-label="AI feature mode">
       <button class="tab active" data-mode="chat" role="tab" aria-selected="true">✦ Chat</button>
+      <button class="tab" data-mode="agents" role="tab" aria-selected="false">⚙ Agents</button>
       <button class="tab" data-mode="image" role="tab" aria-selected="false">▧ Image</button>
       <button class="tab" data-mode="video" role="tab" aria-selected="false">▷ Video</button>
     </div>
@@ -52,6 +83,27 @@
       <div class="field"><label for="chat-input">YOUR MESSAGE</label><textarea id="chat-input" class="control" rows="3" placeholder="Ask something… (Enter to send, Shift+Enter for a new line)"></textarea></div>
       <div class="row"><button class="btn primary" id="send-btn">Send message ↗</button><button class="btn" id="clear-btn">Clear chat</button></div>
       <div id="chat-status" class="helper" aria-live="polite" style="margin-top:10px"></div>
+    </div>
+    <div id="agent-mode" class="hidden">
+      <div class="mode-cards" id="agent-modes" role="radiogroup" aria-label="Agent mode">
+        <button type="button" class="mode-card active" data-agent-mode="compare" role="radio" aria-checked="true"><b>⇄ Compare</b><span>Same prompt to 2–6 models, side by side.</span></button>
+        <button type="button" class="mode-card" data-agent-mode="council" role="radio" aria-checked="false"><b>⚖ Council</b><span>Members answer, optionally critique each other, a judge merges.</span></button>
+        <button type="button" class="mode-card" data-agent-mode="plan" role="radio" aria-checked="false"><b>◇ Planner</b><span>A planner splits the task, workers run it, a synthesiser merges.</span></button>
+      </div>
+      <div class="field"><label for="agent-prompt">TASK</label><textarea id="agent-prompt" class="control" rows="4" placeholder="Describe the question or task… (Ctrl/⌘+Enter to run)"></textarea></div>
+      <div class="field"><label id="agent-routes-label">MODELS</label><div class="picker" id="agent-picker" role="group" aria-labelledby="agent-routes-label"></div><div class="helper" id="agent-picker-help">Tick the models to use. Free & ready routes are listed first.</div></div>
+      <div class="row">
+        <div class="field hidden" id="agent-planner-field"><label for="agent-planner">PLANNER MODEL</label><select id="agent-planner" class="control"></select></div>
+        <div class="field hidden" id="agent-judge-field"><label for="agent-judge" id="agent-judge-label">JUDGE MODEL</label><select id="agent-judge" class="control"></select></div>
+      </div>
+      <div class="row">
+        <div class="field hidden" id="agent-rounds-field"><label for="agent-rounds">COUNCIL ROUNDS</label><select id="agent-rounds" class="control"><option value="1">1 · answers only</option><option value="2">2 · members critique each other</option></select></div>
+        <div class="field"><label for="agent-tokens">MAX TOKENS PER AGENT</label><select id="agent-tokens" class="control"><option value="400">400 · short</option><option value="700" selected>700 · normal</option><option value="1200">1200 · long</option></select></div>
+      </div>
+      <div class="row"><button class="btn primary" id="agent-btn">Run agents ↗</button><button class="btn" id="agent-clear">Clear</button></div>
+      <div id="agent-status" class="helper" aria-live="polite" style="margin-top:10px"></div>
+      <div id="agent-result"></div>
+      <div class="notice">Each agent uses only the model you ticked. If one fails you see its error—nothing is re-routed or invented. Every agent is one upstream call, so free-tier limits apply (max 16 calls per run).</div>
     </div>
     <div id="image-mode" class="hidden">
       <div class="field"><label for="image-prompt">IMAGE PROMPT</label><textarea id="image-prompt" class="control" rows="4" placeholder="A cinematic 3D glass butterfly in a neon garden, high detail…"></textarea></div>
@@ -99,7 +151,15 @@
   const parseError = async (response) => {
     let body = {}; try { body = await response.json(); } catch (_) {}
     let detail = body.detail ?? body.error ?? body.message ?? `HTTP ${response.status}`;
-    if (typeof detail === 'object') detail = `${detail.message || detail.error || 'Request failed'}${Array.isArray(detail.attempts) && detail.attempts.length ? '\n' + detail.attempts.join('\n') : ''}`;
+    if (Array.isArray(detail)) detail = detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+    if (detail && typeof detail === 'object') {
+      const parts = [detail.message || detail.error || 'Request failed'];
+      if (detail.reason && !String(parts[0]).includes(detail.reason)) parts.push(`Reason: ${detail.reason}`);
+      if (detail.hint) parts.push(`Fix: ${detail.hint}`);
+      detail = parts.join('\n');
+    }
+    const retry = response.headers.get('Retry-After');
+    if (retry && response.status === 429) detail = `${detail}\n(retry in about ${retry}s)`;
     return String(detail);
   };
   const api = async (url, options={}) => {
@@ -122,6 +182,8 @@
     mode = nextMode;
     document.querySelectorAll('.tab').forEach(tab => { const active = tab.dataset.mode === nextMode; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); });
     $('chat-model-field').classList.toggle('hidden', nextMode !== 'chat');
+    $('agent-mode').classList.toggle('hidden', nextMode !== 'agents');
+    if (nextMode === 'agents') buildAgentPickers();
     $('chat-mode').classList.toggle('hidden', nextMode !== 'chat');
     $('image-mode').classList.toggle('hidden', nextMode !== 'image');
     $('video-mode').classList.toggle('hidden', nextMode !== 'video');
@@ -130,22 +192,40 @@
   const fillModelSelect = () => {
     const select = $('chat-model'); const current = select.value || 'auto';
     select.replaceChildren();
-    const auto = document.createElement('option'); auto.value = 'auto'; auto.textContent = 'Auto · single route'; select.appendChild(auto);
-    const rows = catalogRows.filter(row => row.type === 'text');
-    rows.sort((a,b) => `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
+    const auto = document.createElement('option'); auto.value = 'auto'; auto.textContent = 'Auto · single route (community)'; select.appendChild(auto);
+    const rows = catalogRows.filter(row => row.type === 'text' && row.id !== 'auto|auto');
+    // Ready-to-use free routes first, then other configured routes, then everything else.
+    const rank = (row) => (row.free_tier && (row.auth_configured || row.route_kind === 'local') ? 0 : row.auth_configured ? 1 : row.free_tier ? 2 : 3);
+    rows.sort((a,b) => rank(a) - rank(b) || `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
+    const groups = {};
+    const groupLabel = (row) => rank(row) === 0 ? '✅ Free & ready' : rank(row) === 1 ? '🔑 Key configured' : rank(row) === 2 ? '🆓 Free tier · add key on server' : '⚙️ Other routes';
     rows.forEach(row => {
-      if (row.id === 'auto|auto') return;
+      const label = groupLabel(row);
+      if (!groups[label]) { groups[label] = document.createElement('optgroup'); groups[label].label = label; select.appendChild(groups[label]); }
       const option = document.createElement('option'); option.value = row.id;
       let status = '';
-      if (row.route_kind === 'official_api') status = row.auth_configured ? ' · API key set' : ' · API key required';
-      if (row.model_id_preset_unverified) status += ' · verify model ID';
-      else if (row.route_kind === 'local') status = ' · local service';
-      else if (row.route_kind === 'g4f_community') { status = ' · community/experimental'; if (row.adapter_installed === false) status += ' · adapter not detected'; }
+      if (row.route_kind === 'official_api') status = row.auth_configured ? ' · key set' : ' · key required';
+      else if (row.route_kind === 'local') status = ' · local';
+      else if (row.route_kind === 'g4f_community') { status = ' · community/experimental'; if (row.adapter_installed === false) status += ' · adapter missing'; }
       else if (row.verified_by === 'g4f-working') status = ' · live-list reported';
+      if (row.free_tier) status += ' · FREE';
+      if (row.model_id_preset_unverified) status += ' · verify ID';
       option.textContent = `${row.provider} · ${row.model}${status}`;
-      option.title = row.availability || '';
-      select.appendChild(option);
+      option.title = [row.availability, row.free_note].filter(Boolean).join(' — ');
+      groups[label].appendChild(option);
     });
+    if ([...select.options].some(o => o.value === current)) select.value = current;
+  };
+  const fillImageSelect = () => {
+    const select = $('image-model'); if (!select) return; const current = select.value || 'auto';
+    select.replaceChildren();
+    const add = (value, text, title='') => { const o = document.createElement('option'); o.value = value; o.textContent = text; o.title = title; select.appendChild(o); };
+    const official = catalogRows.filter(r => r.type === 'image' && r.route_kind === 'official_api');
+    official.sort((a,b) => Number(!!b.auth_configured) - Number(!!a.auth_configured));
+    official.forEach(r => add(r.id, `${r.provider} · ${r.model}${r.auth_configured ? ' · key set' : ' · key required'}${r.free_tier ? ' · FREE' : ''}`, r.availability || ''));
+    catalogRows.filter(r => r.type === 'image' && r.verified_by === 'g4f-working').slice(0, 40)
+      .forEach(r => add(r.id, `${r.provider} · ${r.model} · community`, r.availability || ''));
+    add('auto', 'g4f Auto · one attempt (community)');
     if ([...select.options].some(o => o.value === current)) select.value = current;
   };
   const updateCapabilityList = (counts, health) => {
@@ -162,14 +242,14 @@
       const chip=document.createElement('span'); chip.className=`chip ${Number(count)>0?'good':'warn'}`; chip.textContent=Number(count)>0?'LISTED':'NOT LISTED'; item.append(left,chip); list.appendChild(item);
     });
     if (health && health.g4f_installed === false) {
-      const item=document.createElement('div'); item.className='notice bad'; item.textContent='g4f is not installed in this Python environment. Install requirements.txt, then restart the server.'; list.appendChild(item);
+      const item=document.createElement('div'); item.className='notice bad'; item.textContent='g4f is not installed. Free-tier API routes still work; install requirements.txt only if you want community adapters.'; list.appendChild(item);
     }
   };
   const loadCatalog = async (refresh=false) => {
     $('refresh-btn').disabled = true; $('refresh-btn').textContent = 'Refreshing…';
     try {
       const data = await (await api(`/v1/catalog${refresh ? '?refresh=true' : ''}`)).json();
-      catalogRows = data.rows || []; fillModelSelect();
+      catalogRows = data.rows || []; fillModelSelect(); fillImageSelect(); window.dispatchEvent(new Event('madex-catalog'));
       const counts = data.counts || {}; const textCount=Number(counts.text||0); const mediaCount=Number(counts.image||0)+Number(counts.video||0);
       $('s-text').textContent = textCount; $('s-media').textContent = `${counts.image||0} / ${counts.video||0}`;
       $('catalog-source').textContent = data.source ? new URL(data.source).hostname : 'fallback catalog';
@@ -190,10 +270,10 @@
     try {
       const h = await (await api('/health')).json();
       $('s-gateway').textContent = h.status === 'ok' ? 'Online' : 'Check';
-      $('s-g4f').textContent = h.g4f_installed ? 'Installed' : 'Missing';
-      $('live-label').textContent = h.g4f_installed ? 'GATEWAY ONLINE' : 'G4F NEEDED';
+      $('s-g4f').textContent = h.g4f_installed ? 'Installed' : 'Optional';
+      $('live-label').textContent = 'GATEWAY ONLINE';
       updateCapabilityList({}, h);
-      if (!h.g4f_installed) setStatus('chat-status', 'The web UI is running, but g4f is not installed. Run pip install -r requirements.txt then restart.', 'bad');
+      if (!h.g4f_installed && !(h.configured_free_providers||[]).length) setStatus('chat-status', 'g4f is not installed (optional). Official free-tier routes work without it; add a server-side key and refresh the catalog.', 'bad');
       return h;
     } catch (error) { $('s-gateway').textContent='Offline'; $('s-g4f').textContent='Unknown'; return null; }
   };
@@ -236,8 +316,134 @@
     } catch(error){setStatus('video-status',`Video not available: ${error.message}`,'bad');const note=document.createElement('div');note.className='notice bad';note.textContent='The app did not create a fake clip. If the live keyless list has no video-capable route, this feature cannot generate video until a real free provider becomes available.';$('video-result').appendChild(note);}
     finally{$('video-btn').disabled=false;$('video-btn').textContent='Check & generate video ▷';}
   });
+
+  // ---------------------------- v15.1: toast + agents + diagnostics ----------------------------
+  let toastTimer = null;
+  const toast = (text) => { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200); };
+  const copyText = async (text) => { try { await navigator.clipboard.writeText(text); toast('Copied'); } catch (_) { toast('Copy not allowed in this browser'); } };
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+
+  let agentMode = 'compare';
+  const textRows = () => catalogRows.filter(r => r.type === 'text' && r.id !== 'auto|auto' && r.route_kind !== 'g4f_community');
+  const ready = (r) => r.route_kind === 'local' || r.auth_configured;
+  const sortedAgentRows = () => textRows().sort((a,b) => (Number(ready(b)) - Number(ready(a))) || (Number(!!b.free_tier) - Number(!!a.free_tier)) || `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
+  const savedRoutes = () => { try { return JSON.parse(localStorage.getItem('madex-agent-routes') || '[]'); } catch (_) { return []; } };
+  const persistRoutes = () => { try { localStorage.setItem('madex-agent-routes', JSON.stringify(selectedRoutes())); } catch (_) {} };
+  const selectedRoutes = () => [...document.querySelectorAll('#agent-picker input:checked')].map(i => i.value);
+
+  const fillRouteSelect = (id, rows, keep) => {
+    const sel = $(id); const current = keep || sel.value; sel.replaceChildren();
+    rows.forEach(r => { const o = el('option', '', `${r.provider} · ${r.model}${ready(r) ? '' : ' (needs key)'}`); o.value = r.id; sel.appendChild(o); });
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    else { const first = [...sel.options].find((_, i) => ready(rows[i])); if (first) sel.value = first.value; }
+  };
+  function buildAgentPickers() {
+    const rows = sortedAgentRows(); const picker = $('agent-picker'); const keep = new Set(selectedRoutes().length ? selectedRoutes() : savedRoutes());
+    picker.replaceChildren();
+    if (!rows.length) { picker.appendChild(el('div', 'helper', 'No routes loaded yet. Press “Refresh model catalog”.')); return; }
+    rows.forEach(r => {
+      const label = el('label', `pick ${ready(r) ? 'ready' : 'nokey'}`); label.title = [r.availability, r.free_note].filter(Boolean).join(' — ');
+      const box = document.createElement('input'); box.type = 'checkbox'; box.value = r.id; box.checked = keep.has(r.id);
+      box.addEventListener('change', () => { persistRoutes(); updateAgentHelp(); });
+      const body = el('div'); body.appendChild(el('b', '', r.model)); body.appendChild(el('small', '', `${r.provider}${r.free_tier ? ' · free tier' : ''}${ready(r) ? '' : ' · key required'}`));
+      label.append(box, body); picker.appendChild(label);
+    });
+    fillRouteSelect('agent-planner', rows); fillRouteSelect('agent-judge', rows); updateAgentHelp();
+  }
+  function updateAgentHelp() {
+    const n = selectedRoutes().length; const need = {compare: 'Pick 2–6 models.', council: 'Pick 2–6 members, then a judge.', plan: 'Pick 1–6 workers; planner and synthesiser are chosen below.'}[agentMode];
+    $('agent-picker-help').textContent = `${n} selected. ${need} Routes marked “key required” will return a clear error.`;
+  }
+  const setAgentMode = (m) => {
+    agentMode = m;
+    document.querySelectorAll('.mode-card').forEach(c => { const on = c.dataset.agentMode === m; c.classList.toggle('active', on); c.setAttribute('aria-checked', String(on)); });
+    $('agent-planner-field').classList.toggle('hidden', m !== 'plan');
+    $('agent-judge-field').classList.toggle('hidden', m === 'compare');
+    $('agent-rounds-field').classList.toggle('hidden', m !== 'council');
+    $('agent-judge-label').textContent = m === 'plan' ? 'SYNTHESISER MODEL' : 'JUDGE MODEL';
+    $('agent-routes-label').textContent = m === 'plan' ? 'WORKER MODELS' : m === 'council' ? 'COUNCIL MEMBERS' : 'MODELS TO COMPARE';
+    updateAgentHelp();
+  };
+  document.querySelectorAll('.mode-card').forEach(c => c.addEventListener('click', () => setAgentMode(c.dataset.agentMode)));
+
+  const agentCard = (a, title) => {
+    const card = el('article', `agent-card ${a.ok ? 'ok' : 'err'}`);
+    const head = el('header'); const left = el('div');
+    left.appendChild(el('h4', '', title || a.agent)); left.appendChild(el('div', 'route', a.resolved || a.route || ''));
+    head.append(left, el('span', `chip ${a.ok ? 'good' : 'warn'}`, `${a.ok ? 'OK' : 'FAILED'}${a.ms ? ` · ${(a.ms/1000).toFixed(1)}s` : ''}`)); card.appendChild(head);
+    if (a.task) card.appendChild(el('div', 'route', `Task: ${a.task}`));
+    if (a.ok) {
+      card.appendChild(el('pre', '', a.text));
+      const actions = el('div', 'actions'); const cp = el('button', 'mini', 'Copy'); cp.type = 'button'; cp.addEventListener('click', () => copyText(a.text)); actions.appendChild(cp); card.appendChild(actions);
+    } else {
+      const e = a.error || {}; card.appendChild(el('div', 'err-text', e.message || 'Request failed'));
+      if (e.hint) card.appendChild(el('div', 'hint-text', `Fix: ${e.hint}`));
+    }
+    if (a.revision_error) card.appendChild(el('div', 'hint-text', `Revision failed (kept first answer): ${a.revision_error.message}`));
+    return card;
+  };
+  const finalCard = (f, title) => {
+    const box = el('section', 'final-card'); box.appendChild(el('h4', '', title)); box.appendChild(el('div', 'route', f.resolved || f.route || ''));
+    if (f.ok) { box.appendChild(el('pre', '', f.text)); const cp = el('button', 'mini', 'Copy final answer'); cp.type = 'button'; cp.addEventListener('click', () => copyText(f.text)); box.appendChild(cp); }
+    else { box.appendChild(el('div', 'err-text', (f.error && f.error.message) || 'Failed')); if (f.error && f.error.hint) box.appendChild(el('div', 'hint-text', `Fix: ${f.error.hint}`)); }
+    return box;
+  };
+  const renderAgents = (data) => {
+    const out = $('agent-result'); out.replaceChildren();
+    const grid = (list, namer) => { const g = el('div', 'agent-grid'); list.forEach((a, i) => g.appendChild(agentCard(a, namer ? namer(a, i) : undefined))); return g; };
+    if (data.mode === 'compare') out.appendChild(grid(data.agents, (a, i) => `Model ${i + 1}`));
+    if (data.mode === 'council') {
+      if (data.final) out.appendChild(finalCard(data.final, '⚖ Judge · final answer'));
+      (data.stages || []).forEach(st => { out.appendChild(el('div', 'stage-title', st.stage === 'answers' ? 'Round 1 · member answers' : 'Round 2 · revised answers')); out.appendChild(grid(st.agents)); });
+    }
+    if (data.mode === 'plan') {
+      if (data.error) { const n = el('div', 'notice bad'); n.textContent = `${data.error.message}${data.error.hint ? ' — ' + data.error.hint : ''}`; out.appendChild(n); if (data.planner && data.planner.text) { out.appendChild(el('div', 'stage-title', 'Raw planner output')); out.appendChild(grid([data.planner], () => 'Planner')); } return; }
+      if (data.final) out.appendChild(finalCard(data.final, '◇ Synthesiser · final answer'));
+      out.appendChild(el('div', 'stage-title', `Plan · ${data.plan.length} subtasks`)); out.appendChild(grid(data.workers, (a, i) => `${a.role || 'Worker'} (${i + 1})`));
+    }
+  };
+  const runAgents = async () => {
+    const prompt = $('agent-prompt').value.trim(); const routes = selectedRoutes();
+    if (!prompt) { setStatus('agent-status', 'Write a task first.', 'bad'); return; }
+    const body = {mode: agentMode, prompt, routes, max_tokens: Number($('agent-tokens').value)};
+    if (agentMode === 'council') { body.judge = $('agent-judge').value; body.rounds = Number($('agent-rounds').value); }
+    if (agentMode === 'plan') { body.planner = $('agent-planner').value; body.judge = $('agent-judge').value; }
+    const btn = $('agent-btn'); btn.disabled = true; btn.replaceChildren(el('span', 'spinner'), document.createTextNode('Agents working…'));
+    $('agent-result').replaceChildren(el('div', 'progress'));
+    setStatus('agent-status', 'Calling only the models you selected. This can take a minute on free tiers…');
+    try {
+      const data = await (await api('/v1/agents/run', {method: 'POST', body: JSON.stringify(body)})).json();
+      renderAgents(data);
+      setStatus('agent-status', `Done in ${(data.elapsed_ms/1000).toFixed(1)}s · ${data.calls_made} model calls · fallback: off`, 'good');
+    } catch (error) { $('agent-result').replaceChildren(); setStatus('agent-status', `Agent run failed: ${error.message}`, 'bad'); }
+    finally { btn.disabled = false; btn.textContent = 'Run agents ↗'; }
+  };
+  $('agent-btn').addEventListener('click', runAgents);
+  $('agent-clear').addEventListener('click', () => { $('agent-result').replaceChildren(); $('agent-prompt').value = ''; setStatus('agent-status', ''); });
+  $('agent-prompt').addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runAgents(); } });
+
+  // Real diagnostics (CA bundle, Chromium launch probe, configured free routes)
+  const renderDiag = (d) => {
+    const box = $('diag-panel'); box.replaceChildren(); box.classList.remove('hidden');
+    const row = (name, detail, good) => { const it = el('div', 'provider-item'); const l = el('div'); l.appendChild(el('strong', '', name)); l.appendChild(el('span', '', detail)); it.append(l, el('span', `chip ${good ? 'good' : 'warn'}`, good ? 'OK' : 'CHECK')); box.appendChild(it); };
+    const b = d.browser || {};
+    row('TLS / CA bundle', `${(d.tls && d.tls.source) || 'none found'}`, !!(d.tls && d.tls.bundle));
+    row('Chromium', b.skipped ? 'probe skipped' : b.launch_ok ? `launches · ${b.version || ''}` : `${b.error || 'not found'}${b.hint ? ' — ' + b.hint : ''}`, !!b.launch_ok);
+    row('Community adapters (g4f)', d.g4f && d.g4f.installed ? `v${d.g4f.version} · ${d.g4f.busy}/${d.g4f.workers} workers busy` : 'not installed (optional)', !!(d.g4f && d.g4f.installed));
+    row('Free routes with keys', (d.configured_free_providers || []).join(', ') || 'none yet — add a free key on the server (see README)', (d.configured_free_providers || []).length > 0);
+    const close = el('button', 'mini', 'Hide diagnostics'); close.type = 'button'; close.addEventListener('click', () => box.classList.add('hidden')); box.appendChild(close);
+  };
+  const healthBtn = $('health-btn'); healthBtn.replaceWith(healthBtn.cloneNode(true));
+  $('health-btn').addEventListener('click', async () => {
+    const b = $('health-btn'); b.disabled = true; b.textContent = 'Checking…';
+    try { await loadHealth(); await loadCatalog(false); renderDiag(await (await api('/v1/diagnostics')).json()); toast('Diagnostics complete'); }
+    catch (error) { toast(`Diagnostics failed: ${error.message.split('\n')[0]}`); }
+    finally { b.disabled = false; b.textContent = 'Run diagnostics'; }
+  });
+  // Keep agent pickers fresh whenever the catalog reloads.
+  window.addEventListener('madex-catalog', () => { if (mode === 'agents') buildAgentPickers(); });
+  setAgentMode('compare');
   $('refresh-btn').addEventListener('click',()=>loadCatalog(true));
-  $('health-btn').addEventListener('click',async()=>{await loadHealth();await loadCatalog(false);setStatus('chat-status','Diagnostics refreshed. Check the gateway/library cards above.');});
   tokenInput.addEventListener('change',()=>{try{localStorage.setItem('madex-app-token',tokenInput.value.trim());}catch(_){};});
   tokenInput.addEventListener('blur',()=>{try{localStorage.setItem('madex-app-token',tokenInput.value.trim());}catch(_){};});
   (async()=>{await loadHealth();await loadCatalog(false);})();

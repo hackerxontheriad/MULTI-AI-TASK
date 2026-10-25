@@ -1,0 +1,30 @@
+#!/bin/sh
+# Container-safe Chromium launcher used as CHROME_BIN.
+# Fixes the usual "Chrome failed to start" causes: running as root without --no-sandbox,
+# the tiny /dev/shm in Docker/PaaS, no GPU, and no X display.
+set -eu
+
+REAL="${CHROMIUM_REAL:-}"
+if [ -z "$REAL" ]; then
+  for candidate in /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/google-chrome /usr/bin/google-chrome-stable; do
+    if [ -x "$candidate" ]; then REAL="$candidate"; break; fi
+  done
+fi
+if [ -z "$REAL" ]; then
+  echo "chromium-safe: no Chromium/Chrome binary found (install chromium)" >&2
+  exit 127
+fi
+
+HEADLESS=""
+if [ -z "${DISPLAY:-}" ]; then HEADLESS="--headless=new"; fi
+
+# shellcheck disable=SC2086
+exec "$REAL" $HEADLESS \
+  --no-sandbox \
+  --disable-dev-shm-usage \
+  --disable-gpu \
+  --disable-extensions \
+  --no-first-run \
+  --no-default-browser-check \
+  --renderer-process-limit=1 \
+  "$@"
