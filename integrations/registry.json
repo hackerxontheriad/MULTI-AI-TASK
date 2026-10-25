@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "project": "MADEX / MULTI-AI-TASK",
+  "principles": [
+    "One request calls the explicitly selected provider/model only.",
+    "Do not silently route to a different model on failure.",
+    "Third-party repositories are linked as integration targets, not copied wholesale.",
+    "Review each repository's current license before copying source code.",
+    "A free framework does not make cloud compute, GPU inference, or hosted API quotas unlimited."
+  ],
+  "integrations": [
+    {
+      "name": "ai-agent-comparison",
+      "url": "https://github.com/Vigneshmaradiya/ai-agent-comparison",
+      "category": "agent-framework comparison",
+      "status": "reference",
+      "notes": "Native compare mode already exists; use this repository as evaluation/reference material, not a runtime dependency."
+    },
+    {
+      "name": "CrewAI-Langgraph-Projects",
+      "url": "https://github.com/charithmadhuranga/CrewAI-Langgraph-Projects",
+      "category": "workflow examples",
+      "status": "optional",
+      "notes": "Study/import selected patterns after checking license; do not load its entire environment into the Render service."
+    },
+    {
+      "name": "crewAI-examples",
+      "url": "https://github.com/crewAIInc/crewAI-examples",
+      "category": "CrewAI examples",
+      "status": "optional",
+      "notes": "Optional framework examples; not required by the native compare/council/plan engine."
+    },
+    {
+      "name": "mcp-memory-service",
+      "url": "https://github.com/doobidoo/mcp-memory-service",
+      "category": "MCP persistent memory",
+      "status": "external_or_optional",
+      "notes": "Connect only after deploying/configuring an MCP server and explicit storage/auth; no remote memory server is presumed."
+    },
+    {
+      "name": "full-stack-ai-agent-template",
+      "url": "https://github.com/vstorm-co/full-stack-ai-agent-template",
+      "category": "full-stack RAG template",
+      "status": "reference",
+      "notes": "Separate FastAPI/React app template; merge selected components manually after license and dependency review."
+    },
+    {
+      "name": "agentops",
+      "url": "https://github.com/AgentOps-AI/agentops",
+      "category": "agent observability",
+      "status": "optional",
+      "notes": "Optional SDK; needs its own configuration/account and should be installed only when enabled."
+    },
+    {
+      "name": "CrewAI-Studio",
+      "url": "https://github.com/strnad/CrewAI-Studio",
+      "category": "no-code agent UI",
+      "status": "reference",
+      "notes": "Separate Streamlit UI; current MADEX UI is served by static/index.html."
+    },
+    {
+      "name": "AgentsCrashCourse",
+      "url": "https://github.com/ddavid37/AgentsCrashCourse",
+      "category": "training examples",
+      "status": "reference",
+      "notes": "Educational repository, not a production runtime dependency."
+    },
+    {
+      "name": "innovation-lab-examples",
+      "url": "https://github.com/fetchai/innovation-lab-examples",
+      "category": "A2A agent examples",
+      "status": "optional",
+      "notes": "Protocol examples can inform a future A2A adapter; not auto-enabled."
+    },
+    {
+      "name": "academic-commercialization-agent",
+      "url": "https://github.com/shuxiachai/academic-commercialization-agent",
+      "category": "domain research agent",
+      "status": "reference",
+      "notes": "Domain-specific application; not required for general chat gateway."
+    },
+    {
+      "name": "caspian-sdk",
+      "url": "https://github.com/TryCaspian/caspian-sdk",
+      "category": "omni-channel messaging",
+      "status": "optional",
+      "notes": "Separate messaging SDK; requires channel credentials and explicit user configuration."
+    },
+    {
+      "name": "LibreChat",
+      "url": "https://github.com/LibreChat-AI/LibreChat",
+      "category": "chat frontend",
+      "status": "external",
+      "notes": "Deploy as a separate Node/Docker service and point it at MADEX OpenAI-compatible endpoints; not bundled into the Python Render image."
+    },
+    {
+      "name": "big-AGI",
+      "url": "https://github.com/enricoros/big-AGI",
+      "category": "multi-model frontend",
+      "status": "external",
+      "notes": "Separate frontend/service; configure its provider endpoint to MADEX where supported."
+    },
+    {
+      "name": "MetaGPT",
+      "url": "https://github.com/geekan/MetaGPT",
+      "category": "software engineering agents",
+      "status": "optional",
+      "notes": "Large agent framework; resource-intensive and not suitable to install by default on a 512 MB free Render instance."
+    },
+    {
+      "name": "rea",
+      "url": "https://github.com/morluto/rea",
+      "category": "reverse-engineering analysis",
+      "status": "reference",
+      "notes": "Separate specialized project; not automatically run against uploaded binaries."
+    },
+    {
+      "name": "awesome-multi-agent-papers",
+      "url": "https://github.com/kyegomez/awesome-multi-agent-papers",
+      "category": "research index",
+      "status": "reference",
+      "notes": "Reference list only, not executable integration."
+    },
+    {
+      "name": "g4f",
+      "url": "https://github.com/xtekky/gpt4free",
+      "category": "community model wrappers",
+      "status": "native_experimental",
+      "notes": "Optional dependency; browser-based providers can fail or violate upstream terms. No guarantee of unlimited free access."
+    },
+    {
+      "name": "Open Interpreter",
+      "url": "https://github.com/KillianLucas/open-interpreter",
+      "category": "local code/terminal agent",
+      "status": "optional_isolated",
+      "notes": "Do not enable arbitrary code execution in the public API container; use an isolated local process with explicit user approval."
+    },
+    {
+      "name": "ComfyUI",
+      "url": "https://github.com/comfyanonymous/ComfyUI",
+      "category": "image/video workflows",
+      "status": "external",
+      "notes": "Run separately on a GPU-capable host and add a dedicated authenticated API adapter; not feasible inside free Render web dyno."
+    },
+    {
+      "name": "Fooocus",
+      "url": "https://github.com/lllyasviel/Fooocus",
+      "category": "image generation UI",
+      "status": "external",
+      "notes": "Run separately on compatible GPU hardware; local model weights are large."
+    },
+    {
+      "name": "AUTOMATIC1111 WebUI",
+      "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+      "category": "Stable Diffusion API/UI",
+      "status": "external",
+      "notes": "Run separately with API enabled and secure the endpoint before connecting."
+    },
+    {
+      "name": "DuckDuckGo AI Chat",
+      "url": "https://duckduckgo.com/",
+      "category": "AI/search chat",
+      "status": "unsupported_official_api",
+      "notes": "No stable supported public chat API wired here; no scraping, cookie theft, or reverse-engineering. Use a supported search API instead."
+    },
+    {
+      "name": "LiteLLM",
+      "url": "https://github.com/BerriAI/litellm",
+      "category": "OpenAI-compatible proxy",
+      "status": "configurable",
+      "notes": "Set LITELLM_BASE_URL, LITELLM_API_KEY, and LITELLM_MODELS for a proxy you control or are authorized to use."
+    },
+    {
+      "name": "Hugging Face Inference Providers",
+      "url": "https://huggingface.co/docs/inference-providers",
+      "category": "hosted inference",
+      "status": "native_keyed_free_tier",
+      "notes": "Set HF_TOKEN; free credits/availability vary by account and model."
+    },
+    {
+      "name": "Ollama",
+      "url": "https://github.com/ollama/ollama",
+      "category": "local or hosted open models",
+      "status": "native_local_or_hosted",
+      "notes": "Set OLLAMA_BASE_URL to a reachable server; optional OLLAMA_API_KEY is sent as a bearer token. Render localhost is not your phone/PC."
+    },
+    {
+      "name": "PawanOsman-compatible API",
+      "url": "https://github.com/PawanOsman",
+      "category": "OpenAI-compatible endpoint",
+      "status": "configurable_endpoint",
+      "notes": "Requires an authorized endpoint URL and any required key; service/model availability is not guaranteed."
+    }
+  ]
+}

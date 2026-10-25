@@ -21,3 +21,6 @@ NOT VERIFIED
 - g4f 8.x community adapters were not exercised; they remain experimental. No patch can guarantee third-party browser providers always start.
 - LiteLLM Proxy and PawanOsman-compatible routes were tested offline for configuration/catalog behavior only; no real endpoints were configured or called.
 - DuckDuckGo AI Chat was not integrated because the project does not rely on an undocumented scraping/reverse-engineered chat endpoint.
+
+
+v16 ecosystem pack: includes integrations/registry.json and integrations/README.md for all requested targets. Ollama hosted endpoint auth and diagnostics probe added. Run pytest -q in an environment with requirements-dev.txt installed. Live provider availability remains credential/network dependent.

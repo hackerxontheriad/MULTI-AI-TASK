@@ -1,0 +1,14 @@
+# OPTIONAL ONLY. Do not install this entire file on Render's 512 MB free plan.
+# Select a single integration and verify Python/runtime compatibility first.
+# LangGraph orchestration (native MADEX compare/council/plan does not need this):
+langgraph>=0.2,<2
+# CrewAI framework (can pull many dependencies):
+crewai>=0.80,<2
+# Agent tracing (requires AgentOps account/configuration):
+agentops>=0.3,<1
+# LiteLLM SDK/proxy tooling; a separate proxy service may be needed:
+litellm>=1.50,<2
+# MCP SDK; a memory service itself must be separately deployed/configured:
+mcp>=1.0,<2
+# Open Interpreter can execute code; only use in an isolated, permissioned environment:
+open-interpreter>=0.4,<1

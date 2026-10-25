@@ -1,8 +1,8 @@
 {
   "name": "MADEX Single-Model AI Hub",
-  "version": "15.2.0",
+  "version": "16.0",
   "created_on": "2026-10-25",
-  "purpose": "Single-route AI gateway: free-tier and official APIs, user-configured OpenAI-compatible proxies, local Ollama, multi-agent modes and experimental g4f adapters.",
+  "purpose": "Single-route AI gateway: free-tier and official APIs, user-configured OpenAI-compatible proxies, local Ollama, multi-agent modes and experimental g4f adapters. Ecosystem integration registry and hosted Ollama diagnostics.",
   "features": [
     "single-provider/single-model routing for each request",
     "OpenAI Responses API adapter",
@@ -27,7 +27,11 @@
     "rate limiter",
     "configurable LiteLLM Proxy via explicit OpenAI-compatible base URL and key",
     "configurable PawanOsman-compatible endpoint via explicit base URL and key",
-    "g4f provider ID whitespace normalization and clearer shared-Chrome diagnostics"
+    "g4f provider ID whitespace normalization and clearer shared-Chrome diagnostics",
+    "Ollama optional bearer authentication for reachable hosted endpoints",
+    "Ollama /api/tags reachability diagnostics without exposing credentials",
+    "ecosystem registry for all requested repositories with native/external/optional status",
+    "optional heavy framework dependencies isolated from Render free default install"
   ],
   "files": [
     {
@@ -169,6 +173,26 @@
       "path": "tests/test_universal.py",
       "bytes": 11726,
       "sha256": "a398fc98ac519e2b7d0dbd006a29ef7f8e207fa5182503cdfeac80c79bd136b2"
+    },
+    {
+      "path": "integrations/registry.json",
+      "size_bytes": 8170,
+      "sha256": "e4e58bb941beda6a2e4d6505a8718cdb00fc9532fff190a06de490c05c685560"
+    },
+    {
+      "path": "integrations/repositories.txt",
+      "size_bytes": 1900,
+      "sha256": "be6b645a75663cf48f2fca39e66280cf589e8ecb665aca7afe3fa9a05b93c2e2"
+    },
+    {
+      "path": "integrations/README.md",
+      "size_bytes": 4181,
+      "sha256": "ea29150eb06107510e8bd655e9b2937304dc400798afbf65c0b696979100f3d6"
+    },
+    {
+      "path": "requirements-integrations.txt",
+      "size_bytes": 683,
+      "sha256": "dc3f5091ca972e19cc33af7888fbb01b1b7c7af847d3d62a56c8103d615834a7"
     }
   ],
   "limitations": [

@@ -531,17 +531,25 @@ def call_official_chat(
 
     if kind == "ollama":
         base = _base_url(provider)
+        ollama_headers = {"Content-Type": "application/json"}
+        # Optional auth is used for hosted Ollama endpoints. Keep the secret in a
+        # header; never put it into a URL or a log message. Local Ollama needs no key.
+        ollama_api_key = os.getenv("OLLAMA_API_KEY", "").strip()
+        if ollama_api_key:
+            ollama_headers["Authorization"] = f"Bearer {ollama_api_key}"
         try:
             response = http_client.post(
                 f"{base}/api/chat",
+                headers=ollama_headers,
                 json={"model": model, "messages": msgs, "stream": False,
                       "options": {"temperature": temp, "num_predict": max_tokens}},
                 timeout=timeout, deadline=deadline, retries=0,
             )
         except requests.exceptions.ConnectionError as exc:
             raise RuntimeError(
-                f"Ollama is not reachable at {base}. Start it (`ollama serve`) or set OLLAMA_BASE_URL; "
-                f"then `ollama pull {model}`."
+                f"Ollama is not reachable at {base}. On Render, 127.0.0.1 points to the Render container, "
+                f"not your phone or PC. Set OLLAMA_BASE_URL to a reachable Ollama server; set OLLAMA_API_KEY "
+                f"if that server requires bearer auth; then ensure model '{model}' is installed there."
             ) from exc
         data = _raise_for_provider(response, provider)
         answer = _text((data.get("message") or {}).get("content"))

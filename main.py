@@ -16,6 +16,7 @@ import logging
 import os
 import platform
 import re
+import requests
 import threading
 import time
 import uuid
@@ -709,6 +710,33 @@ def _configured_free_routes() -> list[str]:
             if cfg.get("free_tier") and name != "Ollama Local" and key_is_configured(name)]
 
 
+def _ollama_diagnostic() -> dict[str, Any]:
+    """Short, read-only probe for the configured Ollama endpoint; never reveals keys."""
+    base = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").strip().rstrip("/")
+    if not base:
+        base = "http://127.0.0.1:11434"
+    headers = {"Accept": "application/json"}
+    if os.getenv("OLLAMA_API_KEY", "").strip():
+        headers["Authorization"] = f"Bearer {os.getenv('OLLAMA_API_KEY', '').strip()}"
+    try:
+        response = requests.get(f"{base}/api/tags", headers=headers, timeout=(2, 3))
+        if response.status_code >= 400:
+            return {"reachable": False, "base_url": base, "status_code": response.status_code,
+                    "auth_configured": bool(os.getenv("OLLAMA_API_KEY", "").strip()),
+                    "hint": "Check the endpoint URL, authentication and server access policy."}
+        payload = response.json() if response.content else {}
+        models = [str(item.get("name", "")) for item in payload.get("models", []) if isinstance(item, dict)]
+        return {"reachable": True, "base_url": base, "status_code": response.status_code,
+                "auth_configured": bool(os.getenv("OLLAMA_API_KEY", "").strip()),
+                "installed_models": models[:100]}
+    except Exception as exc:
+        # Error strings can contain URLs or credentials in poorly behaved clients; redact.
+        return {"reachable": False, "base_url": base,
+                "auth_configured": bool(os.getenv("OLLAMA_API_KEY", "").strip()),
+                "error": type(exc).__name__,
+                "hint": "On Render, 127.0.0.1 is the Render container. Set OLLAMA_BASE_URL to a reachable server; configure OLLAMA_API_KEY if required."}
+
+
 def _health_info() -> dict[str, Any]:
     g4f_ok, g4f_version = _g4f_info()
     chrome_path = runtime_env.find_chrome()
@@ -758,6 +786,7 @@ async def diagnostics(probe: bool = True, refresh: bool = False, _: None = Depen
         "g4f": {"installed": _g4f_info()[0], "version": _g4f_info()[1], "workers": G4F_MAX_WORKERS, "busy": active},
         "configured_providers": [n for n in STATIC_MODELS if n != "Ollama Local" and key_is_configured(n)],
         "configured_free_providers": _configured_free_routes(),
+        "ollama": _ollama_diagnostic(),
         "image_routes": list(IMAGE_PROVIDERS),
         "rate_limit_per_minute": RATE_LIMIT_PER_MIN,
         "advice": [

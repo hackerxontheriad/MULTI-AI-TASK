@@ -146,3 +146,8 @@ The Pollinations (`gen.pollinations.ai`) and Cloudflare image/chat endpoints fol
 Not affiliated with OpenAI, Google, Anthropic, xAI, Meta, DeepSeek, Perplexity, Groq, Mistral or the g4f project.
 Community adapters are unofficial; respect each provider's terms and do not use them to bypass access controls.
 Upstream g4f: https://github.com/xtekky/gpt4free · list: https://github.com/Free-AI-Things/g4f-working
+
+
+## v16 ecosystem integration pack
+
+See [`integrations/README.md`](integrations/README.md) and [`integrations/registry.json`](integrations/registry.json) for the complete requested repository map, live/native versus external/optional integration states, Render setup, and free-tier limits. This release adds authenticated Ollama endpoint support and an Ollama reachability probe in `/v1/diagnostics`. Optional framework dependencies are isolated in `requirements-integrations.txt` and are not installed on Render free by default.

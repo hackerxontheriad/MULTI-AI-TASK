@@ -44,6 +44,10 @@ services:
         sync: false
       - key: PAWANOSMAN_MODELS
         sync: false
+      - key: OLLAMA_BASE_URL
+        value: http://127.0.0.1:11434
+      - key: OLLAMA_API_KEY
+        sync: false
       - key: G4F_REQUEST_TIMEOUT
         value: "60"
       - key: CATALOG_TTL_SECONDS

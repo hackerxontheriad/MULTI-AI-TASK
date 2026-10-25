@@ -34,3 +34,12 @@
 ## v14.1.0
 
 - Single-model text route behavior; mobile UI, keyless-community catalog, image experiments and conservative video capability checks.
+
+## v16.0 — Ecosystem integration pack
+
+- Added registry and setup guide for all requested multi-agent, chat UI, image/video, memory, monitoring and community-wrapper repositories.
+- Added optional dependency list without forcing heavy frameworks into the default Render free deployment.
+- Added optional `OLLAMA_API_KEY` Bearer authentication for configured hosted Ollama endpoints.
+- Added protected diagnostics probe for Ollama `/api/tags`; no API key value is returned.
+- Improved Render-specific Ollama connection errors and added Render environment placeholders.
+- Preserved strict single-model routing and explicit provider errors.

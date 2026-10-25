@@ -393,3 +393,31 @@ def test_litellm_proxy_uses_explicit_base_url_and_selected_model(monkeypatch):
     assert seen["url"] == "http://127.0.0.1:4000/v1/chat/completions"
     assert seen["json"]["model"] == "team/model-a"
     assert seen["headers"]["Authorization"] == "Bearer local-test-key-123456"
+
+
+def test_ollama_hosted_api_key_is_sent_as_bearer_header(monkeypatch):
+    monkeypatch.setenv("OLLAMA_BASE_URL", "https://ollama.example")
+    monkeypatch.setenv("OLLAMA_API_KEY", "ollama-test-secret")
+    captured = {}
+    def fake_post(url, **kwargs):
+        captured["url"] = url
+        captured["headers"] = kwargs.get("headers", {})
+        return FakeResponse(data={"message": {"content": "ok"}})
+    monkeypatch.setattr(pc.http_client, "post", fake_post)
+    result = pc.call_official_chat("Ollama Local", "llama3.1:8b", [{"role":"user","content":"hi"}], 0.2, 64, timeout=5)
+    assert result == "ok"
+    assert captured["url"] == "https://ollama.example/api/chat"
+    assert captured["headers"]["Authorization"] == "Bearer ollama-test-secret"
+
+def test_ollama_diagnostic_does_not_expose_api_key(monkeypatch):
+    monkeypatch.setenv("OLLAMA_BASE_URL", "https://ollama.example")
+    monkeypatch.setenv("OLLAMA_API_KEY", "super-secret-ollama-key")
+    class Response:
+        status_code = 200
+        content = b'{"models":[{"name":"llama3.1:8b"}]}'
+        def json(self): return {"models":[{"name":"llama3.1:8b"}]}
+    monkeypatch.setattr(main.requests, "get", lambda *a, **kw: Response())
+    result = main._ollama_diagnostic()
+    assert result["reachable"] is True
+    assert result["installed_models"] == ["llama3.1:8b"]
+    assert "super-secret-ollama-key" not in repr(result)
