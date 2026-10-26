@@ -1,26 +1,26 @@
+# Repository / integration | URL | status
 ai-agent-comparison	https://github.com/Vigneshmaradiya/ai-agent-comparison	reference
 CrewAI-Langgraph-Projects	https://github.com/charithmadhuranga/CrewAI-Langgraph-Projects	optional
 crewAI-examples	https://github.com/crewAIInc/crewAI-examples	optional
 mcp-memory-service	https://github.com/doobidoo/mcp-memory-service	external_or_optional
 full-stack-ai-agent-template	https://github.com/vstorm-co/full-stack-ai-agent-template	reference
-agentops	https://github.com/AgentOps-AI/agentops	optional
-CrewAI-Studio	https://github.com/strnad/CrewAI-Studio	reference
-AgentsCrashCourse	https://github.com/ddavid37/AgentsCrashCourse	reference
-innovation-lab-examples	https://github.com/fetchai/innovation-lab-examples	optional
-academic-commercialization-agent	https://github.com/shuxiachai/academic-commercialization-agent	reference
-caspian-sdk	https://github.com/TryCaspian/caspian-sdk	optional
+AgentOps	https://github.com/AgentOps-AI/agentops	optional
 LibreChat	https://github.com/LibreChat-AI/LibreChat	external
 big-AGI	https://github.com/enricoros/big-AGI	external
 MetaGPT	https://github.com/geekan/MetaGPT	optional
-rea	https://github.com/morluto/rea	reference
-awesome-multi-agent-papers	https://github.com/kyegomez/awesome-multi-agent-papers	reference
-g4f	https://github.com/xtekky/gpt4free	native_experimental
-Open Interpreter	https://github.com/KillianLucas/open-interpreter	optional_isolated
 ComfyUI	https://github.com/comfyanonymous/ComfyUI	external
 Fooocus	https://github.com/lllyasviel/Fooocus	external
 AUTOMATIC1111 WebUI	https://github.com/AUTOMATIC1111/stable-diffusion-webui	external
-DuckDuckGo AI Chat	https://duckduckgo.com/	unsupported_official_api
 LiteLLM	https://github.com/BerriAI/litellm	configurable
-Hugging Face Inference Providers	https://huggingface.co/docs/inference-providers	native_keyed_free_tier
 Ollama	https://github.com/ollama/ollama	native_local_or_hosted
-PawanOsman-compatible API	https://github.com/PawanOsman	configurable_endpoint
+BetterChatGPT	https://github.com/ztjhz/BetterChatGPT	external_reference
+freegpt-webui	https://github.com/ramon-victor/freegpt-webui	archived_external_reference
+Buddo	https://github.com/ArthurKNielsen/Buddo	reference_unverified
+youcoded	https://github.com/itsdestin/youcoded	reference_unverified
+freemicro	https://github.com/eliBenven/freemicro	reference_not_llm_backend
+OmniSearches	https://github.com/KiwiGaze/OmniSearches	external_reference
+Free-GPT4-WEB-API	https://github.com/aledipa/Free-GPT4-WEB-API	optional_isolated_external
+OmniRoute	https://github.com/cheaper-inference/OmniRoute	configurable_openai_compatible_and_mcp_external
+New-API	https://github.com/QuantumNous/new-api	configurable_openai_compatible_external
+One-API	https://github.com/songquanpeng/one-api	configurable_openai_compatible_external
+9Router		missing_exact_owner_repo_url; adapter_scaffold_only

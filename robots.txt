@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /diagnostics
+Disallow: /api/
+Disallow: /v1/

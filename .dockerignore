@@ -7,3 +7,12 @@ __pycache__
 tests
 generated_images/*
 generated_media/*
+.env.*
+!.env.example
+uploaded_files
+*.log
+.DS_Store
+external/upstreams
+frontend/node_modules
+frontend/.vite
+static/landing-tsx

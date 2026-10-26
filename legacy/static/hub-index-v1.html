@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080b1b">
+<meta name="description" content="Single-model AI hub with official APIs, local Ollama and experimental community adapters.">
+<title>MadEx · Single-Model AI Hub</title>
+<style>
+:root{color-scheme:dark;--bg:#070915;--panel:rgba(18,23,47,.78);--panel2:rgba(23,30,61,.74);--line:rgba(164,183,255,.18);--ink:#f3f6ff;--muted:#9ca8ce;--cyan:#53e3e8;--purple:#9a83ff;--pink:#fa80d5;--good:#60e8b3;--warn:#ffd58b;--bad:#ff8ea6;--radius:22px}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}body{overflow-x:hidden;background:radial-gradient(ellipse at 12% 0%,rgba(71,79,188,.27),transparent 42%),radial-gradient(ellipse at 90% 18%,rgba(31,180,194,.17),transparent 36%),radial-gradient(ellipse at 55% 110%,rgba(151,53,159,.16),transparent 42%),var(--bg)}button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}.orb{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(70px);opacity:.2;animation:float 18s ease-in-out infinite alternate}.orb.a{width:270px;height:270px;background:#684dff;top:80px;left:-130px}.orb.b{width:300px;height:300px;background:#00d4d8;right:-145px;top:36%;animation-delay:-7s}@keyframes float{to{transform:translate(45px,-35px) scale(1.12)}}
+.wrap{position:relative;z-index:1;width:min(1180px,100%);margin:0 auto;padding:22px 18px 45px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:12px}.logo{width:48px;height:48px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(140deg,#8f7aff,#3adddc);box-shadow:0 0 38px rgba(83,227,232,.21);color:#080b1b;font-weight:950;font-size:18px}.brand h1{font-size:18px;margin:0;letter-spacing:.7px}.brand p{color:var(--muted);font-size:11px;margin:4px 0 0;letter-spacing:1.6px;text-transform:uppercase}.live{border:1px solid rgba(96,232,179,.25);background:rgba(30,130,106,.12);color:#9ff6d7;border-radius:99px;padding:9px 13px;display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}.dot{width:7px;height:7px;background:var(--good);border-radius:50%;box-shadow:0 0 10px var(--good)}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:30px 0 22px}.hero h2{font-size:clamp(28px,5vw,47px);line-height:1.05;letter-spacing:-1.5px;margin:0;max-width:700px}.gradient{background:linear-gradient(95deg,#fff 5%,#85eff1 44%,#ac9aff 76%,#fface9);background-clip:text;-webkit-background-clip:text;color:transparent}.hero p{max-width:690px;color:var(--muted);line-height:1.7;font-size:14px;margin:13px 0 0}.hero-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:13px;padding:10px 14px;color:var(--ink);background:rgba(255,255,255,.04);font-weight:650;font-size:12px;transition:transform .18s,border-color .18s,background .18s}.btn:hover{transform:translateY(-1px);border-color:rgba(83,227,232,.55)}.btn.primary{color:#09111e;background:linear-gradient(110deg,var(--cyan),#ac9bff);border:0;box-shadow:0 7px 25px rgba(83,227,232,.13)}.btn:disabled{opacity:.55;cursor:wait;transform:none}
+.status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.status-card{border:1px solid var(--line);border-radius:17px;background:linear-gradient(135deg,rgba(27,33,68,.72),rgba(14,18,39,.8));padding:15px}.status-card .eyebrow{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}.status-card strong{display:block;font-size:20px;margin-top:7px;overflow-wrap:anywhere}.status-card small{display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.5}
+.layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(270px,.8fr);gap:16px;align-items:start}.panel{border:1px solid var(--line);background:var(--panel);border-radius:var(--radius);backdrop-filter:blur(20px);box-shadow:0 20px 55px rgba(0,0,0,.15);overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 19px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(99,113,205,.07),transparent)}.panel-head h3{font-size:14px;margin:0}.panel-head p{font-size:11px;color:var(--muted);margin:4px 0 0}.tabs{display:flex;gap:5px;padding:7px;border:1px solid var(--line);background:rgba(3,6,20,.36);border-radius:14px}.tab{border:0;border-radius:10px;padding:9px 12px;background:transparent;color:var(--muted);font-size:12px;font-weight:750}.tab.active{color:#0a1020;background:linear-gradient(110deg,var(--cyan),#b29bff)}.panel-body{padding:18px}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:13px}.field label{font-size:11px;letter-spacing:.4px;color:#c4cbea;font-weight:750}.control{border:1px solid rgba(165,180,235,.18);background:rgba(3,7,23,.48);color:var(--ink);border-radius:12px;padding:12px 13px;width:100%;min-width:0}.control::placeholder{color:#657093}.control:focus{border-color:rgba(83,227,232,.6)}textarea.control{resize:vertical;min-height:86px;line-height:1.55}.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}.helper{font-size:11px;color:var(--muted);line-height:1.6}.checkline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;margin:9px 0 13px}.checkline input{accent-color:var(--cyan)}
+.chatbox{height:390px;overflow:auto;border:1px solid var(--line);border-radius:16px;background:rgba(4,7,21,.39);padding:13px;display:flex;flex-direction:column;gap:12px;margin-bottom:13px}.empty{margin:auto;text-align:center;max-width:270px;color:var(--muted);font-size:12px;line-height:1.7}.empty .spark{font-size:30px;display:block;margin-bottom:9px}.bubble{max-width:91%;padding:12px 13px;border-radius:15px;font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.user{align-self:flex-end;background:linear-gradient(130deg,rgba(69,113,189,.4),rgba(123,92,207,.34));border:1px solid rgba(146,158,255,.21);border-bottom-right-radius:5px}.bubble.assistant{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid var(--line);border-bottom-left-radius:5px}.bubble .who{display:block;text-transform:uppercase;letter-spacing:1px;font-size:9px;color:var(--cyan);margin-bottom:4px;font-weight:900}.meta{color:var(--muted);font-size:10px;margin-top:5px}.result{margin-top:13px;border:1px solid var(--line);border-radius:14px;background:rgba(5,8,22,.37);padding:14px;min-height:70px}.result:empty{display:none}.result img,.result video{display:block;width:100%;max-height:480px;object-fit:contain;border-radius:10px;background:#050713}.result a{color:var(--cyan);overflow-wrap:anywhere}.notice{padding:11px 12px;border:1px solid rgba(255,213,139,.2);background:rgba(151,99,20,.1);border-radius:12px;color:#f5dba5;font-size:11px;line-height:1.6;margin:12px 0}.notice.good{border-color:rgba(96,232,179,.2);background:rgba(36,132,100,.1);color:#a3f2d5}.notice.bad{border-color:rgba(255,142,166,.24);background:rgba(126,28,53,.15);color:#ffb2c0}.hidden{display:none!important}
+.side-stack{display:flex;flex-direction:column;gap:14px}.side-body{padding:16px}.provider-list{display:flex;flex-direction:column;gap:9px}.provider-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border:1px solid rgba(165,180,235,.12);border-radius:12px;background:rgba(255,255,255,.025)}.provider-item strong{font-size:12px;font-weight:750}.provider-item span{display:block;font-size:10px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}.chip{border-radius:99px;font-size:9px;padding:5px 8px;border:1px solid var(--line);color:#b9c5ef;white-space:nowrap}.chip.good{border-color:rgba(96,232,179,.25);color:#99f4d1}.chip.warn{border-color:rgba(255,213,139,.25);color:var(--warn)}.rule{height:1px;background:var(--line);margin:14px 0}.links{display:flex;gap:8px;flex-wrap:wrap}.link{color:#b5c8ff;text-decoration:none;font-size:11px;padding:7px 9px;border:1px solid var(--line);border-radius:9px}.link:hover{border-color:var(--cyan)}.footer{text-align:center;color:#7380a9;font-size:10px;margin-top:24px;line-height:1.8}.footer a{color:#a4b4ef}.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.hero-actions{width:100%}.status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.side-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.wrap{padding:16px 12px 30px}.top{align-items:flex-start}.brand h1{font-size:15px}.logo{width:42px;height:42px}.live{font-size:10px;padding:8px}.hero{margin:23px 0 18px}.hero h2{letter-spacing:-.8px}.hero p{font-size:13px}.status-card{padding:12px}.status-card strong{font-size:17px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.tab{padding:10px 6px}.panel-head{align-items:flex-start;flex-direction:column}.panel-body{padding:13px}.row{flex-direction:column;gap:0}.chatbox{height:340px}.bubble{max-width:96%}.side-stack{grid-template-columns:1fr}.hero-actions .btn{flex:1}}
+
+/* ---- v15.1 agents + diagnostics + toasts ---- */
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;max-height:240px;overflow:auto;padding:4px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.02)}
+.pick{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid rgba(165,180,235,.12);border-radius:11px;background:rgba(255,255,255,.025);cursor:pointer;font-size:12px;line-height:1.35}
+.pick:hover{border-color:var(--cyan)}.pick input{margin-top:2px;accent-color:var(--cyan)}.pick b{display:block;font-size:12px}.pick small{color:var(--muted);font-size:10px;overflow-wrap:anywhere}
+.pick.ready b::after{content:" FREE·READY";color:var(--good);font-size:9px;margin-left:6px}
+.pick.nokey{opacity:.62}
+.mode-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.mode-card{text-align:left;padding:11px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink)}
+.mode-card b{display:block;font-size:13px}.mode-card span{font-size:10.5px;color:var(--muted);line-height:1.35;display:block;margin-top:3px}
+.mode-card.active{border-color:var(--cyan);background:linear-gradient(135deg,rgba(83,227,232,.12),rgba(154,131,255,.12))}
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.agent-card{border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.agent-card.ok{border-color:rgba(96,232,179,.28)}.agent-card.err{border-color:rgba(255,142,166,.35)}
+.agent-card header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.agent-card h4{margin:0;font-size:12px}.agent-card .route{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+.agent-card pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:12.5px;line-height:1.5;max-height:340px;overflow:auto}
+.agent-card .actions{display:flex;gap:6px;flex-wrap:wrap}
+.mini{font-size:10px;padding:5px 9px;border-radius:9px;border:1px solid var(--line);background:transparent;color:#b9c5ef}.mini:hover{border-color:var(--cyan)}
+.final-card{border:1px solid rgba(83,227,232,.4);background:linear-gradient(135deg,rgba(83,227,232,.08),rgba(154,131,255,.1));border-radius:18px;padding:14px;margin-top:12px}
+.stage-title{margin:16px 0 0;font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.err-text{color:var(--bad);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.hint-text{color:var(--warn);font-size:11px}
+.diag{margin-top:12px;display:grid;gap:8px}.diag .provider-item strong{font-size:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1b2347;border:1px solid var(--cyan);color:var(--ink);padding:10px 16px;border-radius:12px;font-size:12px;z-index:50;transition:.25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.progress{height:3px;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink));background-size:200% 100%;animation:slide 1.2s linear infinite;margin-top:10px}
+@keyframes slide{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.progress,.orb{animation:none}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="orb a"></div><div class="orb b"></div>
+<div class="wrap">
+<header class="top">
+  <div class="brand"><div class="logo">MX</div><div><h1>MADEX <span class="gradient">SINGLE-MODEL AI HUB</span></h1><p>One workspace · One requested provider per API call</p></div></div>
+  <div class="live"><span class="dot"></span><span id="live-label">LOCAL UI READY</span></div>
+</header>
+<section class="hero">
+  <div><h2>One hub. <span class="gradient">Every provider, one route.</span></h2><p>Chat, multi-agent compare/council/planner runs, image and video in one mobile-friendly interface. Pick free-tier APIs (Groq, Cerebras, Mistral, Gemini, GitHub Models, Hugging Face, Cloudflare, Pollinations, NVIDIA NIM, OpenRouter Free), PawanOsman hosted API, local Ollama, paid official APIs or experimental community adapters. Keys live on the server; community routes can be unstable.</p></div>
+  <div class="hero-actions"><button class="btn" id="refresh-btn">↻ Refresh model catalog</button><button class="btn" id="health-btn">Run diagnostics</button></div>
+</section>
+<section class="diag hidden" id="diag-panel" aria-live="polite"></section>
+<section class="status-grid" aria-label="Service status">
+  <div class="status-card"><div class="eyebrow">Gateway</div><strong id="s-gateway">Checking…</strong><small>Local app health</small></div>
+  <div class="status-card"><div class="eyebrow">g4f library</div><strong id="s-g4f">Checking…</strong><small>Installed in the Python environment</small></div>
+  <div class="status-card"><div class="eyebrow">Live community text rows</div><strong id="s-text">—</strong><small>Community-reported provider/model pairs</small></div>
+  <div class="status-card"><div class="eyebrow">Image / video rows</div><strong id="s-media">—</strong><small>Only counts reported in the live list</small></div>
+</section>
+<div class="layout">
+<main class="panel">
+  <div class="panel-head">
+    <div><h3>Creative workspace</h3><p>Choose one exact provider/model. A failed request returns an error—MADEX does not switch to another model.</p></div>
+    <div class="tabs" role="tablist" aria-label="AI feature mode">
+      <button class="tab active" data-mode="chat" role="tab" aria-selected="true">✦ Chat</button>
+      <button class="tab" data-mode="agents" role="tab" aria-selected="false">⚙ Agents</button>
+      <button class="tab" data-mode="image" role="tab" aria-selected="false">▧ Image</button>
+      <button class="tab" data-mode="video" role="tab" aria-selected="false">▷ Video</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="field" id="chat-model-field"><label for="chat-model">TEXT MODEL / PROVIDER</label><select class="control" id="chat-model"><option value="auto">Auto · single route</option></select><div class="helper">Choose the exact route. Keys stay on the server. Community adapters are experimental; configured official free-tier/local APIs are more predictable.</div></div>
+    <div class="field" id="chat-fallback-field"><label><input type="checkbox" id="chat-fallback-enabled"> Enable explicit backup routes on failure</label><select class="control" id="chat-fallback-models" multiple size="4" aria-label="Explicit fallback models"></select><div class="helper">Optional: select up to 4 backup routes. They are tried in list order only if the primary route fails; no fallback is used unless enabled here.</div></div>
+    <div id="chat-mode">
+      <div class="chatbox" id="chatbox"><div class="empty"><span class="spark">✧</span><b>Your chat starts here</b><br>Ask a question, write code, explain a topic, or brainstorm an idea.</div></div>
+      <div class="field"><label for="chat-input">YOUR MESSAGE</label><textarea id="chat-input" class="control" rows="3" placeholder="Ask something… (Enter to send, Shift+Enter for a new line)"></textarea></div>
+      <div class="row"><button class="btn primary" id="send-btn">Send message ↗</button><button class="btn" id="clear-btn">Clear chat</button></div>
+      <div id="chat-status" class="helper" aria-live="polite" style="margin-top:10px"></div>
+    </div>
+    <div id="agent-mode" class="hidden">
+      <div class="mode-cards" id="agent-modes" role="radiogroup" aria-label="Agent mode">
+        <button type="button" class="mode-card active" data-agent-mode="compare" role="radio" aria-checked="true"><b>⇄ Compare</b><span>Same prompt to 2–6 models, side by side.</span></button>
+        <button type="button" class="mode-card" data-agent-mode="council" role="radio" aria-checked="false"><b>⚖ Council</b><span>Members answer, optionally critique each other, a judge merges.</span></button>
+        <button type="button" class="mode-card" data-agent-mode="plan" role="radio" aria-checked="false"><b>◇ Planner</b><span>A planner splits the task, workers run it, a synthesiser merges.</span></button>
+      </div>
+      <div class="field"><label for="agent-prompt">TASK</label><textarea id="agent-prompt" class="control" rows="4" placeholder="Describe the question or task… (Ctrl/⌘+Enter to run)"></textarea></div>
+      <div class="field"><label id="agent-routes-label">MODELS</label><div class="picker" id="agent-picker" role="group" aria-labelledby="agent-routes-label"></div><div class="helper" id="agent-picker-help">Tick the models to use. Free & ready routes are listed first.</div></div>
+      <div class="row">
+        <div class="field hidden" id="agent-planner-field"><label for="agent-planner">PLANNER MODEL</label><select id="agent-planner" class="control"></select></div>
+        <div class="field hidden" id="agent-judge-field"><label for="agent-judge" id="agent-judge-label">JUDGE MODEL</label><select id="agent-judge" class="control"></select></div>
+      </div>
+      <div class="row">
+        <div class="field hidden" id="agent-rounds-field"><label for="agent-rounds">COUNCIL ROUNDS</label><select id="agent-rounds" class="control"><option value="1">1 · answers only</option><option value="2">2 · members critique each other</option></select></div>
+        <div class="field"><label for="agent-tokens">MAX TOKENS PER AGENT</label><select id="agent-tokens" class="control"><option value="400">400 · short</option><option value="700" selected>700 · normal</option><option value="1200">1200 · long</option></select></div>
+      </div>
+      <div class="row"><button class="btn primary" id="agent-btn">Run agents ↗</button><button class="btn" id="agent-clear">Clear</button></div>
+      <div id="agent-status" class="helper" aria-live="polite" style="margin-top:10px"></div>
+      <div id="agent-result"></div>
+      <div class="notice">Each agent uses only the model you ticked. If one fails you see its error—nothing is re-routed or invented. Every agent is one upstream call, so free-tier limits apply (max 16 calls per run).</div>
+    </div>
+    <div id="image-mode" class="hidden">
+      <div class="field"><label for="image-prompt">IMAGE PROMPT</label><textarea id="image-prompt" class="control" rows="4" placeholder="A cinematic 3D glass butterfly in a neon garden, high detail…"></textarea></div>
+      <div class="row"><div class="field"><label for="image-model">IMAGE MODEL</label><select id="image-model" class="control"><option value="auto">g4f Auto · one attempt</option><option value="flux">Flux (experimental)</option><option value="flux-dev">Flux Dev (experimental)</option><option value="pollinations">Pollinations (experimental)</option></select></div><div class="field"><label for="image-size">SIZE</label><select id="image-size" class="control"><option>1024x1024</option><option>1024x1536</option><option>1536x1024</option></select></div></div>
+      <button class="btn primary" id="image-btn">Generate image ✧</button>
+      <div id="image-status" class="helper" aria-live="polite" style="margin-top:10px"></div><div id="image-result" class="result"></div>
+      <div class="notice">Image generation is experimental. The app attempts only the selected image model (Auto is one upstream attempt) and never substitutes a stock image.</div>
+    </div>
+    <div id="video-mode" class="hidden">
+      <div class="field"><label for="video-prompt">VIDEO PROMPT</label><textarea id="video-prompt" class="control" rows="4" placeholder="A slow cinematic camera move around a futuristic city at sunset…"></textarea></div>
+      <div class="row"><div class="field"><label for="video-ratio">ASPECT RATIO</label><select id="video-ratio" class="control"><option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option></select></div><div class="field"><label for="video-image-url">OPTIONAL SOURCE IMAGE URL</label><input id="video-image-url" class="control" type="url" placeholder="https://…"></div></div>
+      <button class="btn primary" id="video-btn">Check & generate video ▷</button>
+      <div id="video-status" class="helper" aria-live="polite" style="margin-top:10px"></div><div id="video-result" class="result"></div>
+      <div class="notice">Important: the current live g4f-working report may have zero verified no-auth video providers. If so, video generation returns a clear “not available” response. No sample MP4 will be presented as generated output.</div>
+    </div>
+  </div>
+</main>
+<aside class="side-stack">
+  <section class="panel"><div class="panel-head"><div><h3>Server access</h3><p>Optional protection for your own hosted app</p></div></div><div class="side-body">
+    <div class="field"><label for="access-token">APP ACCESS TOKEN</label><input id="access-token" class="control" type="password" autocomplete="current-password" placeholder="Leave blank if not configured"></div>
+    <div class="helper">This is your app's optional gateway password—not a provider key. Saved only in this browser's local storage. Never share it with anyone.</div>
+    <div class="rule"></div><div class="helper">Provider keys belong in the server environment (.env locally or host Environment settings). Do not paste OpenAI, Gemini, Claude, Grok or Meta provider keys into this browser box.</div>
+  </div></section>
+  <section class="panel"><div class="panel-head"><div><h3>Capability report</h3><p id="catalog-source">Checking model catalog…</p></div><span class="chip" id="catalog-age">LIVE CHECK</span></div><div class="side-body"><div class="provider-list" id="capability-list"><div class="provider-item"><div><strong>Text</strong><span>Checking catalog</span></div><span class="chip">…</span></div></div><div class="rule"></div><div class="helper" id="catalog-note">Official API model presets are not an availability guarantee. API keys are configured on the server; community routes are unverified.</div></div></section>
+  <section class="panel"><div class="panel-head"><div><h3>API shortcuts</h3><p>Docs and direct status endpoints</p></div></div><div class="side-body"><div class="links"><a class="link" href="/docs" target="_blank" rel="noopener">API docs ↗</a><a class="link" href="/health" target="_blank" rel="noopener">Health JSON ↗</a><a class="link" href="/v1/catalog" target="_blank" rel="noopener">Catalog JSON ↗</a><a class="link" href="/v1/status" target="_blank" rel="noopener">Status JSON ↗</a></div><div class="rule"></div><div class="helper">Need the OpenAI-style endpoint? <code>/v1/chat/completions</code></div></div></section>
+</aside>
+</div>
+<footer class="footer">MADEX SINGLE-MODEL AI HUB · Community-maintained provider adapters, no uptime guarantee.<br>Use providers lawfully and follow their terms. <a href="https://github.com/xtekky/gpt4free" target="_blank" rel="noopener">g4f upstream</a> · <a href="https://github.com/Free-AI-Things/g4f-working" target="_blank" rel="noopener">keyless provider list</a></footer>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let mode = 'chat';
+  let catalogRows = [];
+  let history = [];
+  const tokenInput = $('access-token');
+  try { tokenInput.value = localStorage.getItem('madex-app-token') || ''; } catch (_) {}
+  const authHeaders = () => {
+    const token = tokenInput.value.trim();
+    return token ? {'Authorization': `Bearer ${token}`} : {};
+  };
+  const setStatus = (id, text, kind='') => {
+    const el = $(id); el.className = kind ? `helper ${kind}` : 'helper'; el.textContent = text;
+  };
+  const parseError = async (response) => {
+    let body = {}; try { body = await response.json(); } catch (_) {}
+    let detail = body.detail ?? body.error ?? body.message ?? `HTTP ${response.status}`;
+    if (Array.isArray(detail)) detail = detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+    if (detail && typeof detail === 'object') {
+      const parts = [detail.message || detail.error || 'Request failed'];
+      if (detail.reason && !String(parts[0]).includes(detail.reason)) parts.push(`Reason: ${detail.reason}`);
+      if (detail.hint) parts.push(`Fix: ${detail.hint}`);
+      detail = parts.join('\n');
+    }
+    const retry = response.headers.get('Retry-After');
+    if (retry && response.status === 429) detail = `${detail}\n(retry in about ${retry}s)`;
+    return String(detail);
+  };
+  const api = async (url, options={}) => {
+    const headers = {...authHeaders(), ...(options.headers || {})};
+    if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+    const response = await fetch(url, {...options, headers});
+    if (!response.ok) throw new Error(await parseError(response));
+    return response;
+  };
+  const escapeText = (s) => String(s ?? '');
+  const addBubble = (role, text, meta='') => {
+    const box = $('chatbox'); const empty = box.querySelector('.empty'); if (empty) empty.remove();
+    const bubble = document.createElement('div'); bubble.className = `bubble ${role}`;
+    const who = document.createElement('span'); who.className = 'who'; who.textContent = role === 'user' ? 'You' : 'MadEx AI'; bubble.appendChild(who);
+    const content = document.createElement('div'); content.textContent = escapeText(text); bubble.appendChild(content);
+    if (meta) { const m = document.createElement('div'); m.className='meta'; m.textContent=meta; bubble.appendChild(m); }
+    box.appendChild(bubble); box.scrollTop = box.scrollHeight;
+  };
+  const setMode = (nextMode) => {
+    mode = nextMode;
+    document.querySelectorAll('.tab').forEach(tab => { const active = tab.dataset.mode === nextMode; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); });
+    $('chat-model-field').classList.toggle('hidden', nextMode !== 'chat');
+    $('agent-mode').classList.toggle('hidden', nextMode !== 'agents');
+    if (nextMode === 'agents') buildAgentPickers();
+    $('chat-mode').classList.toggle('hidden', nextMode !== 'chat');
+    $('image-mode').classList.toggle('hidden', nextMode !== 'image');
+    $('video-mode').classList.toggle('hidden', nextMode !== 'video');
+  };
+  document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
+  const fillModelSelect = () => {
+    const select = $('chat-model'); const current = select.value || 'auto';
+    select.replaceChildren();
+    const auto = document.createElement('option'); auto.value = 'auto'; auto.textContent = 'Auto · single route (community)'; select.appendChild(auto);
+    const rows = catalogRows.filter(row => row.type === 'text' && row.id !== 'auto|auto');
+    // Ready-to-use free routes first, then other configured routes, then everything else.
+    const rank = (row) => (row.free_tier && (row.auth_configured || row.route_kind === 'local') ? 0 : row.auth_configured ? 1 : row.free_tier ? 2 : 3);
+    rows.sort((a,b) => rank(a) - rank(b) || `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
+    const groups = {};
+    const groupLabel = (row) => rank(row) === 0 ? '✅ Free & ready' : rank(row) === 1 ? '🔑 Key configured' : rank(row) === 2 ? '🆓 Free tier · add key on server' : '⚙️ Other routes';
+    rows.forEach(row => {
+      const label = groupLabel(row);
+      if (!groups[label]) { groups[label] = document.createElement('optgroup'); groups[label].label = label; select.appendChild(groups[label]); }
+      const option = document.createElement('option'); option.value = row.id;
+      let status = '';
+      if (row.route_kind === 'official_api') status = row.auth_configured ? ' · key set' : ' · key required';
+      else if (row.route_kind === 'local') status = ' · local';
+      else if (row.route_kind === 'g4f_community') { status = ' · community/experimental'; if (row.adapter_installed === false) status += ' · adapter missing'; }
+      else if (row.verified_by === 'g4f-working') status = ' · live-list reported';
+      if (row.free_tier) status += ' · FREE';
+      if (row.model_id_preset_unverified) status += ' · verify ID';
+      option.textContent = `${row.provider} · ${row.model}${status}`;
+      option.title = [row.availability, row.free_note].filter(Boolean).join(' — ');
+      groups[label].appendChild(option);
+    });
+    if ([...select.options].some(o => o.value === current)) select.value = current;
+    fillFallbackSelect();
+  };
+  const fillFallbackSelect = () => {
+    const select = $('chat-fallback-models'); if (!select) return;
+    const previous = new Set([...select.selectedOptions].map(o => o.value));
+    const primary = $('chat-model')?.value;
+    select.replaceChildren();
+    const rows = catalogRows.filter(row => row.type === 'text' && row.id !== 'auto|auto' && row.id !== primary);
+    const rank = (row) => (row.free_tier && (row.auth_configured || row.route_kind === 'local') ? 0 : row.auth_configured ? 1 : row.free_tier ? 2 : 3);
+    rows.sort((a,b) => rank(a) - rank(b) || `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
+    rows.forEach(row => {
+      const option = document.createElement('option'); option.value = row.id;
+      option.textContent = `${row.provider} · ${row.model}${row.free_tier ? ' · FREE' : ''}${row.auth_configured ? ' · ready' : ''}`;
+      option.title = [row.availability, row.free_note].filter(Boolean).join(' — ');
+      option.selected = previous.has(row.id);
+      select.appendChild(option);
+    });
+    // Clamp to the first four selected options to match the API contract.
+    [...select.selectedOptions].slice(4).forEach(option => { option.selected = false; });
+  };
+  $('chat-model')?.addEventListener('change', fillFallbackSelect);
+  const fillImageSelect = () => {
+    const select = $('image-model'); if (!select) return; const current = select.value || 'auto';
+    select.replaceChildren();
+    const add = (value, text, title='') => { const o = document.createElement('option'); o.value = value; o.textContent = text; o.title = title; select.appendChild(o); };
+    const official = catalogRows.filter(r => r.type === 'image' && r.route_kind === 'official_api');
+    official.sort((a,b) => Number(!!b.auth_configured) - Number(!!a.auth_configured));
+    official.forEach(r => add(r.id, `${r.provider} · ${r.model}${r.auth_configured ? ' · key set' : ' · key required'}${r.free_tier ? ' · FREE' : ''}`, r.availability || ''));
+    catalogRows.filter(r => r.type === 'image' && r.verified_by === 'g4f-working').slice(0, 40)
+      .forEach(r => add(r.id, `${r.provider} · ${r.model} · community`, r.availability || ''));
+    add('auto', 'g4f Auto · one attempt (community)');
+    if ([...select.options].some(o => o.value === current)) select.value = current;
+  };
+  const updateCapabilityList = (counts, health) => {
+    const list = $('capability-list'); list.replaceChildren();
+    const items = [
+      ['Text chat', counts.text || 0, 'reported free rows'],
+      ['Image generation', counts.image || 0, 'reported image rows'],
+      ['Video generation', counts.video || 0, 'reported video rows'],
+      ['Audio', counts.audio || 0, 'reported audio rows']
+    ];
+    items.forEach(([name, count, caption]) => {
+      const item = document.createElement('div'); item.className='provider-item';
+      const left = document.createElement('div'); const strong = document.createElement('strong'); strong.textContent=name; const sub=document.createElement('span'); sub.textContent=`${count} ${caption}`; left.append(strong,sub);
+      const chip=document.createElement('span'); chip.className=`chip ${Number(count)>0?'good':'warn'}`; chip.textContent=Number(count)>0?'LISTED':'NOT LISTED'; item.append(left,chip); list.appendChild(item);
+    });
+    if (health && health.g4f_installed === false) {
+      const item=document.createElement('div'); item.className='notice bad'; item.textContent='g4f is not installed. Free-tier API routes still work; install requirements.txt only if you want community adapters.'; list.appendChild(item);
+    }
+  };
+  const loadCatalog = async (refresh=false) => {
+    $('refresh-btn').disabled = true; $('refresh-btn').textContent = 'Refreshing…';
+    try {
+      const data = await (await api(`/v1/catalog${refresh ? '?refresh=true' : ''}`)).json();
+      catalogRows = data.rows || []; fillModelSelect(); fillImageSelect(); window.dispatchEvent(new Event('madex-catalog'));
+      const counts = data.counts || {}; const textCount=Number(counts.text||0); const mediaCount=Number(counts.image||0)+Number(counts.video||0);
+      $('s-text').textContent = textCount; $('s-media').textContent = `${counts.image||0} / ${counts.video||0}`;
+      $('catalog-source').textContent = data.source ? new URL(data.source).hostname : 'fallback catalog';
+      $('catalog-age').textContent = refresh ? 'REFRESHED' : 'CACHED / LIVE';
+      $('catalog-note').textContent = data.catalog_warning ? `Catalog warning: ${data.catalog_warning}` : 'Daily community test results can go stale; a listed row can still fail at request time.';
+      updateCapabilityList(counts);
+      $('live-label').textContent = 'CATALOG LOADED';
+      if (textCount === 0) setStatus('chat-status', 'No working-list text rows loaded; Auto can still try g4f.', '');
+    } catch (error) {
+      $('catalog-source').textContent = 'Catalog unavailable'; $('catalog-age').textContent = 'OFFLINE';
+      $('catalog-note').textContent = 'The public community list could not be reached. Official presets remain selectable; community options are experimental.';
+      setStatus('chat-status', `Catalog load warning: ${error.message}`);
+    } finally {
+      $('refresh-btn').disabled = false; $('refresh-btn').textContent = '↻ Refresh model catalog';
+    }
+  };
+  const loadHealth = async () => {
+    try {
+      const h = await (await api('/health')).json();
+      $('s-gateway').textContent = h.status === 'ok' ? 'Online' : 'Check';
+      $('s-g4f').textContent = h.g4f_installed ? 'Installed' : 'Optional';
+      $('live-label').textContent = 'GATEWAY ONLINE';
+      updateCapabilityList({}, h);
+      if (!h.g4f_installed && !(h.configured_free_providers||[]).length) setStatus('chat-status', 'g4f is not installed (optional). Official free-tier routes work without it; add a server-side key and refresh the catalog.', 'bad');
+      return h;
+    } catch (error) { $('s-gateway').textContent='Offline'; $('s-g4f').textContent='Unknown'; return null; }
+  };
+  const sendChat = async () => {
+    const input = $('chat-input'); const text = input.value.trim(); if (!text) return;
+    input.value = ''; history.push({role:'user',content:text}); addBubble('user',text);
+    $('send-btn').disabled=true; $('send-btn').innerHTML='<span class="spinner"></span>Calling selected route…'; setStatus('chat-status','Calling only the selected provider/model…');
+    try {
+      const fallbackModels = $('chat-fallback-enabled').checked ? [...$('chat-fallback-models').selectedOptions].slice(0,4).map(o => o.value) : [];
+      const response = await api('/v1/chat/completions',{method:'POST',body:JSON.stringify({model:$('chat-model').value||'auto',fallback_models:fallbackModels,messages:history,temperature:.7,max_tokens:1500,stream:false})});
+      const result=await response.json(); const choice=result.choices?.[0]?.message?.content || 'Provider returned an empty reply.';
+      const meta = result.madex || {}; const fallbackLabel = meta.fallback_used ? `fallback used after ${((meta.failed_routes_before_success||meta.fallbacks_before_success||[]).length)} route failure(s)` : 'fallback unused';
+      history.push({role:'assistant',content:choice}); addBubble('assistant',choice,`Response route: ${result.model || 'selected route'} · ${fallbackLabel}`);
+      setStatus('chat-status',`Reply received from ${result.model || 'the selected route'} · ${fallbackLabel}.`, 'good');
+    } catch(error) { addBubble('assistant',`Requested model/provider failed. Check the returned diagnostics.\n${error.message}`,'No successful response'); setStatus('chat-status',`Request failed: ${error.message}`, 'bad'); }
+    finally { $('send-btn').disabled=false; $('send-btn').textContent='Send message ↗'; }
+  };
+  $('send-btn').addEventListener('click',sendChat);
+  $('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+  $('clear-btn').addEventListener('click',()=>{history=[];$('chatbox').innerHTML='<div class="empty"><span class="spark">✧</span><b>Your chat starts here</b><br>Ask a question, write code, explain a topic, or brainstorm an idea.</div>';setStatus('chat-status','Chat cleared.');});
+  $('image-btn').addEventListener('click',async()=>{
+    const prompt=$('image-prompt').value.trim(); if(!prompt){setStatus('image-status','Enter an image prompt first.','bad');return;}
+    $('image-btn').disabled=true;$('image-btn').innerHTML='<span class="spinner"></span>Calling selected image route…';$('image-result').replaceChildren();setStatus('image-status','Calling only the selected image route; no second model will be attempted.');
+    try {
+      const response=await api('/v1/images/generations',{method:'POST',body:JSON.stringify({prompt,model:$('image-model').value,size:$('image-size').value,response_format:'url',n:1})});
+      const data=await response.json();const item=data.data?.[0]||{};const result=$('image-result');
+      if(item.url){const img=document.createElement('img');img.src=item.url;img.alt=prompt;img.loading='lazy';result.appendChild(img);const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener';link.textContent='Open image ↗';result.appendChild(link);}
+      else if(item.b64_json){const img=document.createElement('img');img.src=`data:image/png;base64,${item.b64_json}`;img.alt=prompt;result.appendChild(img);}
+      else {result.textContent='Provider responded without a usable image URL.';}
+      setStatus('image-status',`Image result returned by ${data.model || 'g4f'}.`,'good');
+    } catch(error){setStatus('image-status',`Image failed: ${error.message}`,'bad');const note=document.createElement('div');note.className='notice bad';note.textContent='No actual image was generated. The selected image route failed; no second model was tried.';$('image-result').appendChild(note);}
+    finally{$('image-btn').disabled=false;$('image-btn').textContent='Generate image ✧';}
+  });
+  $('video-btn').addEventListener('click',async()=>{
+    const prompt=$('video-prompt').value.trim();if(!prompt){setStatus('video-status','Enter a video prompt first.','bad');return;}
+    $('video-btn').disabled=true;$('video-btn').innerHTML='<span class="spinner"></span>Checking real video support…';$('video-result').replaceChildren();setStatus('video-status','Checking one video route only; no fallback model will be attempted.');
+    try {
+      const response=await api('/v1/video/generate',{method:'POST',body:JSON.stringify({prompt,model:'auto',aspect_ratio:$('video-ratio').value,image_url:$('video-image-url').value.trim()||null})});
+      const data=await response.json();const url=data.video_url||data.url;
+      if(url){const video=document.createElement('video');video.controls=true;video.playsInline=true;video.src=url;$('video-result').appendChild(video);const a=document.createElement('a');a.href=url;a.textContent='Open generated video ↗';a.target='_blank';a.rel='noopener';$('video-result').appendChild(a);setStatus('video-status',`Video generated by ${data.provider||'provider'}.`,'good');}
+      else {setStatus('video-status','Provider returned no video URL. No sample file was substituted.','bad');}
+    } catch(error){setStatus('video-status',`Video not available: ${error.message}`,'bad');const note=document.createElement('div');note.className='notice bad';note.textContent='The app did not create a fake clip. If the live keyless list has no video-capable route, this feature cannot generate video until a real free provider becomes available.';$('video-result').appendChild(note);}
+    finally{$('video-btn').disabled=false;$('video-btn').textContent='Check & generate video ▷';}
+  });
+
+  // ---------------------------- v15.1: toast + agents + diagnostics ----------------------------
+  let toastTimer = null;
+  const toast = (text) => { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200); };
+  const copyText = async (text) => { try { await navigator.clipboard.writeText(text); toast('Copied'); } catch (_) { toast('Copy not allowed in this browser'); } };
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+
+  let agentMode = 'compare';
+  const textRows = () => catalogRows.filter(r => r.type === 'text' && r.id !== 'auto|auto' && r.route_kind !== 'g4f_community');
+  const ready = (r) => r.route_kind === 'local' || r.auth_configured;
+  const sortedAgentRows = () => textRows().sort((a,b) => (Number(ready(b)) - Number(ready(a))) || (Number(!!b.free_tier) - Number(!!a.free_tier)) || `${a.provider} ${a.model}`.localeCompare(`${b.provider} ${b.model}`));
+  const savedRoutes = () => { try { return JSON.parse(localStorage.getItem('madex-agent-routes') || '[]'); } catch (_) { return []; } };
+  const persistRoutes = () => { try { localStorage.setItem('madex-agent-routes', JSON.stringify(selectedRoutes())); } catch (_) {} };
+  const selectedRoutes = () => [...document.querySelectorAll('#agent-picker input:checked')].map(i => i.value);
+
+  const fillRouteSelect = (id, rows, keep) => {
+    const sel = $(id); const current = keep || sel.value; sel.replaceChildren();
+    rows.forEach(r => { const o = el('option', '', `${r.provider} · ${r.model}${ready(r) ? '' : ' (needs key)'}`); o.value = r.id; sel.appendChild(o); });
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    else { const first = [...sel.options].find((_, i) => ready(rows[i])); if (first) sel.value = first.value; }
+  };
+  function buildAgentPickers() {
+    const rows = sortedAgentRows(); const picker = $('agent-picker'); const keep = new Set(selectedRoutes().length ? selectedRoutes() : savedRoutes());
+    picker.replaceChildren();
+    if (!rows.length) { picker.appendChild(el('div', 'helper', 'No routes loaded yet. Press “Refresh model catalog”.')); return; }
+    rows.forEach(r => {
+      const label = el('label', `pick ${ready(r) ? 'ready' : 'nokey'}`); label.title = [r.availability, r.free_note].filter(Boolean).join(' — ');
+      const box = document.createElement('input'); box.type = 'checkbox'; box.value = r.id; box.checked = keep.has(r.id);
+      box.addEventListener('change', () => { persistRoutes(); updateAgentHelp(); });
+      const body = el('div'); body.appendChild(el('b', '', r.model)); body.appendChild(el('small', '', `${r.provider}${r.free_tier ? ' · free tier' : ''}${ready(r) ? '' : ' · key required'}`));
+      label.append(box, body); picker.appendChild(label);
+    });
+    fillRouteSelect('agent-planner', rows); fillRouteSelect('agent-judge', rows); updateAgentHelp();
+  }
+  function updateAgentHelp() {
+    const n = selectedRoutes().length; const need = {compare: 'Pick 2–6 models.', council: 'Pick 2–6 members, then a judge.', plan: 'Pick 1–6 workers; planner and synthesiser are chosen below.'}[agentMode];
+    $('agent-picker-help').textContent = `${n} selected. ${need} Routes marked “key required” will return a clear error.`;
+  }
+  const setAgentMode = (m) => {
+    agentMode = m;
+    document.querySelectorAll('.mode-card').forEach(c => { const on = c.dataset.agentMode === m; c.classList.toggle('active', on); c.setAttribute('aria-checked', String(on)); });
+    $('agent-planner-field').classList.toggle('hidden', m !== 'plan');
+    $('agent-judge-field').classList.toggle('hidden', m === 'compare');
+    $('agent-rounds-field').classList.toggle('hidden', m !== 'council');
+    $('agent-judge-label').textContent = m === 'plan' ? 'SYNTHESISER MODEL' : 'JUDGE MODEL';
+    $('agent-routes-label').textContent = m === 'plan' ? 'WORKER MODELS' : m === 'council' ? 'COUNCIL MEMBERS' : 'MODELS TO COMPARE';
+    updateAgentHelp();
+  };
+  document.querySelectorAll('.mode-card').forEach(c => c.addEventListener('click', () => setAgentMode(c.dataset.agentMode)));
+
+  const agentCard = (a, title) => {
+    const card = el('article', `agent-card ${a.ok ? 'ok' : 'err'}`);
+    const head = el('header'); const left = el('div');
+    left.appendChild(el('h4', '', title || a.agent)); left.appendChild(el('div', 'route', a.resolved || a.route || ''));
+    head.append(left, el('span', `chip ${a.ok ? 'good' : 'warn'}`, `${a.ok ? 'OK' : 'FAILED'}${a.ms ? ` · ${(a.ms/1000).toFixed(1)}s` : ''}`)); card.appendChild(head);
+    if (a.task) card.appendChild(el('div', 'route', `Task: ${a.task}`));
+    if (a.ok) {
+      card.appendChild(el('pre', '', a.text));
+      const actions = el('div', 'actions'); const cp = el('button', 'mini', 'Copy'); cp.type = 'button'; cp.addEventListener('click', () => copyText(a.text)); actions.appendChild(cp); card.appendChild(actions);
+    } else {
+      const e = a.error || {}; card.appendChild(el('div', 'err-text', e.message || 'Request failed'));
+      if (e.hint) card.appendChild(el('div', 'hint-text', `Fix: ${e.hint}`));
+    }
+    if (a.revision_error) card.appendChild(el('div', 'hint-text', `Revision failed (kept first answer): ${a.revision_error.message}`));
+    return card;
+  };
+  const finalCard = (f, title) => {
+    const box = el('section', 'final-card'); box.appendChild(el('h4', '', title)); box.appendChild(el('div', 'route', f.resolved || f.route || ''));
+    if (f.ok) { box.appendChild(el('pre', '', f.text)); const cp = el('button', 'mini', 'Copy final answer'); cp.type = 'button'; cp.addEventListener('click', () => copyText(f.text)); box.appendChild(cp); }
+    else { box.appendChild(el('div', 'err-text', (f.error && f.error.message) || 'Failed')); if (f.error && f.error.hint) box.appendChild(el('div', 'hint-text', `Fix: ${f.error.hint}`)); }
+    return box;
+  };
+  const renderAgents = (data) => {
+    const out = $('agent-result'); out.replaceChildren();
+    const grid = (list, namer) => { const g = el('div', 'agent-grid'); list.forEach((a, i) => g.appendChild(agentCard(a, namer ? namer(a, i) : undefined))); return g; };
+    if (data.mode === 'compare') out.appendChild(grid(data.agents, (a, i) => `Model ${i + 1}`));
+    if (data.mode === 'council') {
+      if (data.final) out.appendChild(finalCard(data.final, '⚖ Judge · final answer'));
+      (data.stages || []).forEach(st => { out.appendChild(el('div', 'stage-title', st.stage === 'answers' ? 'Round 1 · member answers' : 'Round 2 · revised answers')); out.appendChild(grid(st.agents)); });
+    }
+    if (data.mode === 'plan') {
+      if (data.error) { const n = el('div', 'notice bad'); n.textContent = `${data.error.message}${data.error.hint ? ' — ' + data.error.hint : ''}`; out.appendChild(n); if (data.planner && data.planner.text) { out.appendChild(el('div', 'stage-title', 'Raw planner output')); out.appendChild(grid([data.planner], () => 'Planner')); } return; }
+      if (data.final) out.appendChild(finalCard(data.final, '◇ Synthesiser · final answer'));
+      out.appendChild(el('div', 'stage-title', `Plan · ${data.plan.length} subtasks`)); out.appendChild(grid(data.workers, (a, i) => `${a.role || 'Worker'} (${i + 1})`));
+    }
+  };
+  const runAgents = async () => {
+    const prompt = $('agent-prompt').value.trim(); const routes = selectedRoutes();
+    if (!prompt) { setStatus('agent-status', 'Write a task first.', 'bad'); return; }
+    const body = {mode: agentMode, prompt, routes, max_tokens: Number($('agent-tokens').value)};
+    if (agentMode === 'council') { body.judge = $('agent-judge').value; body.rounds = Number($('agent-rounds').value); }
+    if (agentMode === 'plan') { body.planner = $('agent-planner').value; body.judge = $('agent-judge').value; }
+    const btn = $('agent-btn'); btn.disabled = true; btn.replaceChildren(el('span', 'spinner'), document.createTextNode('Agents working…'));
+    $('agent-result').replaceChildren(el('div', 'progress'));
+    setStatus('agent-status', 'Calling only the models you selected. This can take a minute on free tiers…');
+    try {
+      const data = await (await api('/v1/agents/run', {method: 'POST', body: JSON.stringify(body)})).json();
+      renderAgents(data);
+      setStatus('agent-status', `Done in ${(data.elapsed_ms/1000).toFixed(1)}s · ${data.calls_made} model calls · fallback: off`, 'good');
+    } catch (error) { $('agent-result').replaceChildren(); setStatus('agent-status', `Agent run failed: ${error.message}`, 'bad'); }
+    finally { btn.disabled = false; btn.textContent = 'Run agents ↗'; }
+  };
+  $('agent-btn').addEventListener('click', runAgents);
+  $('agent-clear').addEventListener('click', () => { $('agent-result').replaceChildren(); $('agent-prompt').value = ''; setStatus('agent-status', ''); });
+  $('agent-prompt').addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runAgents(); } });
+
+  // Real diagnostics (CA bundle, Chromium launch probe, configured free routes)
+  const renderDiag = (d) => {
+    const box = $('diag-panel'); box.replaceChildren(); box.classList.remove('hidden');
+    const row = (name, detail, good) => { const it = el('div', 'provider-item'); const l = el('div'); l.appendChild(el('strong', '', name)); l.appendChild(el('span', '', detail)); it.append(l, el('span', `chip ${good ? 'good' : 'warn'}`, good ? 'OK' : 'CHECK')); box.appendChild(it); };
+    const b = d.browser || {};
+    row('TLS / CA bundle', `${(d.tls && d.tls.source) || 'none found'}`, !!(d.tls && d.tls.bundle));
+    row('Chromium', b.skipped ? 'probe skipped' : b.launch_ok ? `launches · ${b.version || ''}` : `${b.error || 'not found'}${b.hint ? ' — ' + b.hint : ''}`, !!b.launch_ok);
+    row('Community adapters (g4f)', d.g4f && d.g4f.installed ? `v${d.g4f.version} · ${d.g4f.busy}/${d.g4f.workers} workers busy` : 'not installed (optional)', !!(d.g4f && d.g4f.installed));
+    row('Free routes with keys', (d.configured_free_providers || []).join(', ') || 'none yet — add a free key on the server (see README)', (d.configured_free_providers || []).length > 0);
+    const close = el('button', 'mini', 'Hide diagnostics'); close.type = 'button'; close.addEventListener('click', () => box.classList.add('hidden')); box.appendChild(close);
+  };
+  const healthBtn = $('health-btn'); healthBtn.replaceWith(healthBtn.cloneNode(true));
+  $('health-btn').addEventListener('click', async () => {
+    const b = $('health-btn'); b.disabled = true; b.textContent = 'Checking…';
+    try { await loadHealth(); await loadCatalog(false); renderDiag(await (await api('/v1/diagnostics')).json()); toast('Diagnostics complete'); }
+    catch (error) { toast(`Diagnostics failed: ${error.message.split('\n')[0]}`); }
+    finally { b.disabled = false; b.textContent = 'Run diagnostics'; }
+  });
+  // Keep agent pickers fresh whenever the catalog reloads.
+  window.addEventListener('madex-catalog', () => { if (mode === 'agents') buildAgentPickers(); });
+  setAgentMode('compare');
+  $('refresh-btn').addEventListener('click',()=>loadCatalog(true));
+  tokenInput.addEventListener('change',()=>{try{localStorage.setItem('madex-app-token',tokenInput.value.trim());}catch(_){};});
+  tokenInput.addEventListener('blur',()=>{try{localStorage.setItem('madex-app-token',tokenInput.value.trim());}catch(_){};});
+  (async()=>{await loadHealth();await loadCatalog(false);})();
+})();
+</script>
+</body>
+</html>

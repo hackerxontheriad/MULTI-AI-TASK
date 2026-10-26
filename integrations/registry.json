@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
-  "project": "MADEX / MULTI-AI-TASK",
+  "project": "MAD X Hybrid AI Studio / MULTI-AI-TASK",
   "principles": [
     "One request calls the explicitly selected provider/model only.",
     "Do not silently route to a different model on failure.",
     "Third-party repositories are linked as integration targets, not copied wholesale.",
     "Review each repository's current license before copying source code.",
-    "A free framework does not make cloud compute, GPU inference, or hosted API quotas unlimited."
+    "A free framework does not make cloud compute, GPU inference, or hosted API quotas unlimited.",
+    "Browser code and TSX are not secret: authorization, rate limits, and provider credentials must be enforced server-side."
   ],
   "integrations": [
     {
@@ -190,6 +191,96 @@
       "category": "OpenAI-compatible endpoint",
       "status": "configurable_endpoint",
       "notes": "Requires an authorized endpoint URL and any required key; service/model availability is not guaranteed."
+    },
+    {
+      "name": "BetterChatGPT",
+      "url": "https://github.com/ztjhz/BetterChatGPT",
+      "category": "chat UI reference",
+      "status": "external_reference",
+      "license": "CC0-1.0 (per repository page)",
+      "notes": "Optional frontend reference. The upstream README documents OpenAI API keys or a separately hosted compatible endpoint; this does not provide free model inference by itself."
+    },
+    {
+      "name": "freegpt-webui",
+      "url": "https://github.com/ramon-victor/freegpt-webui",
+      "category": "community provider UI",
+      "status": "archived_external_reference",
+      "license": "GPL-3.0 (per repository page)",
+      "notes": "Archived/read-only upstream as observed during integration review. Uses community provider wrappers; no uptime, terms, or unlimited-free guarantee. Not copied or enabled by default."
+    },
+    {
+      "name": "Buddo",
+      "url": "https://github.com/ArthurKNielsen/Buddo",
+      "category": "user-requested repository",
+      "status": "reference_unverified",
+      "notes": "Link recorded for manual source/license review. Not bundled or executed; verify its current README, license, runtime, and security before adoption."
+    },
+    {
+      "name": "youcoded",
+      "url": "https://github.com/itsdestin/youcoded",
+      "category": "user-requested repository",
+      "status": "reference_unverified",
+      "notes": "Link recorded for manual source/license review. Not bundled or executed; verify its current README, license, runtime, and security before adoption."
+    },
+    {
+      "name": "freemicro",
+      "url": "https://github.com/eliBenven/freemicro",
+      "category": "hardware utility",
+      "status": "reference_not_llm_backend",
+      "license": "MIT (per repository page)",
+      "notes": "Appears to be a hardware/macro-pad utility rather than an AI model provider. Linked for completeness, not installed into the AI runtime."
+    },
+    {
+      "name": "OmniSearches",
+      "url": "https://github.com/KiwiGaze/OmniSearches",
+      "category": "AI web-search reference",
+      "status": "external_reference",
+      "license": "MIT (per repository README)",
+      "notes": "Separate React/Vite + Express/TypeScript project; the README describes Gemini plus a reasoning API key. Search/API keys and separate deployment are required; it is not automatically merged as a backend dependency."
+    },
+    {
+      "name": "Free-GPT4-WEB-API",
+      "url": "https://github.com/aledipa/Free-GPT4-WEB-API",
+      "category": "community API server",
+      "status": "optional_isolated_external",
+      "license": "GPL-3.0 (per repository page)",
+      "notes": "Separate Flask/g4f server with a provider-switching design and optional cookie settings. Must be hosted and secured separately; community routes can fail and are not a guaranteed unlimited free model. Do not pass private cookies or credentials into it."
+    },
+    {
+      "name": "OmniRoute",
+      "url": "https://github.com/cheaper-inference/OmniRoute",
+      "category": "OpenAI-compatible gateway and MCP server",
+      "status": "configurable_native_http_adapter_mcp_external",
+      "license": "MIT (upstream repository page)",
+      "notes": "MA D X now has an OpenAI-compatible HTTP connector. OmniRoute itself must run as a separate service; create an Endpoint/API key in its dashboard, set OMNIROUTE_BASE_URL and OMNIROUTE_API_KEY, and configure MCP client separately. API keys/quotas are managed by the gateway; no token extension is presumed."
+    },
+    {
+      "name": "9Router",
+      "url": "https://github.com/",
+      "category": "user-named API router",
+      "status": "configurable_adapter_pending_upstream_identity",
+      "notes": "The name was supplied without an exact GitHub owner/repository. Generic OpenAI-compatible adapter scaffolding is included, but the exact upstream identity and API contract must be verified before calling it working."
+    },
+    {
+      "name": "New-API",
+      "url": "https://github.com/QuantumNous/new-api",
+      "category": "multi-channel API management gateway",
+      "status": "configurable_openai_compatible_adapter_external_service",
+      "notes": "Separate service, database, provider/channel configuration, and admin setup are required. Only connect to an instance you operate/are authorized to use."
+    },
+    {
+      "name": "One-API",
+      "url": "https://github.com/songquanpeng/one-api",
+      "category": "API management gateway",
+      "status": "configurable_openai_compatible_adapter_external_service",
+      "notes": "Separate service and account/channel setup required. This ZIP does not deploy or bundle the upstream application source."
+    },
+    {
+      "name": "Google Play Integrity / verified-client concept",
+      "url": "https://developer.android.com/google/play/integrity",
+      "category": "Android app integrity",
+      "status": "design_reference_not_enforced",
+      "notes": "A TypeScript bundle or APK wrapper cannot prevent reverse engineering by itself. Real integrity decisions require a backend nonce/verdict verification flow and supported Play Integrity setup; not falsely reported as active here."
     }
   ]
 }

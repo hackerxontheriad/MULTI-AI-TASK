@@ -1,58 +1,71 @@
 {
-  "name": "MADEX Single-Model AI Hub",
-  "version": "16.0",
-  "created_on": "2026-10-25",
-  "purpose": "Single-route AI gateway: free-tier and official APIs, user-configured OpenAI-compatible proxies, local Ollama, multi-agent modes and experimental g4f adapters. Ecosystem integration registry and hosted Ollama diagnostics.",
+  "name": "MAD X Hybrid AI Studio",
+  "version": "17.0.0",
+  "release_date": "2026-10-26",
+  "description": "Merged free-first hybrid AI studio based on the two user-supplied project archives; includes new animated landing page, legacy assets, connector setup and Android wrapper source.",
+  "verification": {
+    "pytest": "77 passed (offline suite)",
+    "python_compile": "passed for core runtime, router and utility modules",
+    "javascript_syntax": "passed for static/app.js, static/landing.js and static/diagnostics.js",
+    "http_routes": "smoke-tested with FastAPI TestClient; connector status auth gate tested",
+    "github_upstream_fetch": "not performed: outbound GitHub DNS/network unavailable",
+    "live_provider_requests": "not performed",
+    "google_oauth_end_to_end": "not performed",
+    "tsx_build": "not performed: packages unavailable offline; source included",
+    "android_apk": "not built or signed: Android SDK and Gradle unavailable",
+    "docker_build": "not performed",
+    "real_hosted_image_or_video_generation": "not verified",
+    "security_certification": "not performed"
+  },
   "features": [
-    "single-provider/single-model routing for each request",
-    "OpenAI Responses API adapter",
-    "Google Gemini generateContent API adapter",
-    "Anthropic Claude Messages API adapter",
-    "xAI Grok API adapter",
-    "Meta Model API adapter",
-    "DeepSeek API adapter",
-    "Perplexity API adapter",
-    "local Ollama adapter for user-installed models",
-    "provider-native live model discovery when server-side keys are configured",
-    "experimental g4f community presets and live community catalog",
-    "image generation one-route behavior",
-    "conservative video capability checks with no fabricated media",
-    "mobile UI, Docker/Render configs, offline tests",
-    "free-tier routes: Groq, Cerebras, Mistral, GitHub Models, Hugging Face, Cloudflare Workers AI, Pollinations",
-    "multi-agent modes with explicit per-agent routes and no fallback: compare, council, planner",
-    "real image routes (Pollinations, Cloudflare Workers AI) without a browser",
-    "Chromium detection + container-safe wrapper + launch probe diagnostics",
-    "CA bundle setup, bounded same-URL retries, secret redaction",
-    ".env loader",
-    "rate limiter",
-    "configurable LiteLLM Proxy via explicit OpenAI-compatible base URL and key",
-    "configurable PawanOsman-compatible endpoint via explicit base URL and key",
-    "g4f provider ID whitespace normalization and clearer shared-Chrome diagnostics",
-    "Ollama optional bearer authentication for reachable hosted endpoints",
-    "Ollama /api/tags reachability diagnostics without exposing credentials",
-    "ecosystem registry for all requested repositories with native/external/optional status",
-    "optional heavy framework dependencies isolated from Render free default install"
+    "v16.1 single-route FastAPI backend retained and versioned as 17.0.0",
+    "Six-agent task pipeline with planner, researcher, builder, reviewer, optimizer and tester roles",
+    "Verified Google ID-token login scaffolding, encrypted HttpOnly sessions, optional email allowlist and app bearer token mode",
+    "Separate admin-only diagnostics password and authenticated connector status with optional gateway probes",
+    "Animated emerald/glass/metallic-gold landing page at / with original landing archived under legacy/static",
+    "Both old/new SVG logo paths, both icon PNG paths and original logo-demo.mp4 preserved",
+    "Code blocks with Copy and Download; HTML/SVG Run and Preview in a sandboxed iframe",
+    "Configurable OmniRoute, 9Router scaffold, New-API and One-API OpenAI-compatible gateway entries",
+    "OmniRoute MCP client example and setup guide; no token is hard-coded or automatically minted",
+    "Android wrapper Gradle/Java/manifest/resources source; APK not compiled",
+    "HTML, Java, PHP and Python preview runner examples",
+    "Static ZIP/APK/AAB source inventory utility that does not execute archive contents",
+    "External repository registry, license/dependency notes and opt-in shallow fetch script"
+  ],
+  "source_archives": [
+    "madex-hybrid.zip",
+    "MAD-X-Hybrid-Studio-v16.1.zip"
+  ],
+  "notes": [
+    "External repositories are listed but their entire source trees are not bundled because GitHub access failed in the build environment and separate project dependency/license requirements need review.",
+    "TSX and minification do not make browser-delivered code impossible to inspect; secrets remain server-side.",
+    "Configured connectors are not necessarily reachable or entitled to run a model; quotas and terms are governed by each provider."
   ],
   "files": [
     {
       "path": ".dockerignore",
-      "bytes": 95,
-      "sha256": "97d570285a0b90c6014f8a80607cef465cecacc227aadf80357a4f390960dd1a"
+      "bytes": 222,
+      "sha256": "eaa8b45d7333c5bebb0fd8b09a256b0fb1139dc3613cd0260f38b73ecb743274"
     },
     {
       "path": ".env.example",
-      "bytes": 2431,
-      "sha256": "d98ac419f29dbac5b44a4fd4bfe1b239140bd45ac25de6530ae46ac19fccd5ef"
+      "bytes": 3933,
+      "sha256": "89ef0a680902d93aa4efe941655d5b128e4cdfa104a59d08b5b4358134bd8de1"
     },
     {
       "path": ".gitignore",
-      "bytes": 140,
-      "sha256": "1f92d10f0152266e4ae2378747c8a99da6c1760d6584b397e1e2d60d56fa767a"
+      "bytes": 219,
+      "sha256": "f1122d729ad91725852819ad2a671161543d049db15d3a15a1c46e5a599f0ba5"
+    },
+    {
+      "path": "AGENT_AND_ANDROID_ENVIRONMENT.md",
+      "bytes": 1614,
+      "sha256": "daa2c355f8144adf83096d3f7a797bce4c59e3e9f2b351688ea274bf3e18bab6"
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 2636,
-      "sha256": "eddd4ff126d3fdf48e5b89b7e754e59032d6b3d375d6370b42fcba53552ab4e0"
+      "bytes": 2559,
+      "sha256": "cbf4a6bbdaf326b64df673a42c8b7c63bb8c004e2584fe2480f2008bcd2969ec"
     },
     {
       "path": "Dockerfile",
@@ -71,18 +84,108 @@
     },
     {
       "path": "README.md",
-      "bytes": 9349,
-      "sha256": "b517e0907f3243f59782552c55d32f8eba9186cf75bcbee5ae2371eff030f4b2"
+      "bytes": 9456,
+      "sha256": "604698477bf2c3983253fba2e58f7c1bc45470c8fa52bfbc87267f09f0cc1a07"
+    },
+    {
+      "path": "UPSTREAM_INTEGRATIONS-v1.md",
+      "bytes": 5353,
+      "sha256": "02bf226a46a0a337fe69108ed713d62e7625724c67841c53b7f54ecd978528f3"
+    },
+    {
+      "path": "UPSTREAM_RESEARCH-v1.md",
+      "bytes": 3836,
+      "sha256": "9b94bfaacd7cee35feb8b3dd7d7f02b5dc105b261fc7dac3b578ba7ee07d4381"
     },
     {
       "path": "VALIDATION.txt",
-      "bytes": 2221,
-      "sha256": "13ce8d9e2e86ce72ab65f2606ad27ad77d63e445bfdb46f6df0a75221f2f0289"
+      "bytes": 2077,
+      "sha256": "f26b354cf5a5fbe7a3ef8d20cfba1151c3e39a8145d7c34211ff5dc46f809c0e"
+    },
+    {
+      "path": "agent_router.py",
+      "bytes": 2815,
+      "sha256": "90833954440ebab2a6268f84d979b30a66de2c0c6a2dd6c03b4ae5b6bdb48615"
     },
     {
       "path": "agents.py",
       "bytes": 15139,
       "sha256": "491a44218bc33e03b085ddd72f38a271003fcb31b21324aecadee85ecd3d23e5"
+    },
+    {
+      "path": "android-wrapper/README.md",
+      "bytes": 574,
+      "sha256": "ddaacd6e506e371f05e3e1162150a22b0fc01c43f06a489da371172fc7ee86fd"
+    },
+    {
+      "path": "android-wrapper/app/build.gradle",
+      "bytes": 263,
+      "sha256": "e9a62a61110a457a6a77212fe54d5646c3d9f115393e7ea39e2a310a06bcb338"
+    },
+    {
+      "path": "android-wrapper/app/src/main/AndroidManifest.xml",
+      "bytes": 630,
+      "sha256": "c7bb7da78da57c5ecdb9aa34fbe89d1e9856713b5e508d9cd3fa0b2f417be720"
+    },
+    {
+      "path": "android-wrapper/app/src/main/java/com/madex/browser/MainActivity.java",
+      "bytes": 2204,
+      "sha256": "59bf2004730cdc91dd7e2e2e383cae68d7ba70f9b8e57e8ea75c94d225cf0c81"
+    },
+    {
+      "path": "android-wrapper/app/src/main/res/values/styles.xml",
+      "bytes": 416,
+      "sha256": "7f28dce56754341a62187e71506f457ee4877647980589ceba2ef7579528bc3a"
+    },
+    {
+      "path": "android-wrapper/build.gradle",
+      "bytes": 73,
+      "sha256": "c3c0cf04da0fc239f391c774554d97d890018ab6e37e87cc62f6070d0c8c9909"
+    },
+    {
+      "path": "android-wrapper/gradle.properties",
+      "bytes": 76,
+      "sha256": "fb298af7d84d0e20523e7172625a8d975a11efa043c573ca97f8997a0e84fb5f"
+    },
+    {
+      "path": "android-wrapper/settings.gradle",
+      "bytes": 273,
+      "sha256": "7483a1874abdb87a6c2ca165f75e0eeab52428b496f97372233981dc2fa8f5c1"
+    },
+    {
+      "path": "frontend/README.md",
+      "bytes": 798,
+      "sha256": "0451a7d9f9c7d989d86c376af6b0e808a28c7c835c6bb3d1525e56ec739e1f18"
+    },
+    {
+      "path": "frontend/index.html",
+      "bytes": 311,
+      "sha256": "830c0beddabbd7e864dc692f7e69b4a36195892ba145397540e9efc960a0c07b"
+    },
+    {
+      "path": "frontend/package.json",
+      "bytes": 472,
+      "sha256": "5f94c340d8a9f755acf8e256ac53811ae6f32598fe7bb5ffc4af364ce2d25877"
+    },
+    {
+      "path": "frontend/src/landing.css",
+      "bytes": 6556,
+      "sha256": "8ccdeb6dbed046e21a445809056d474ca2798b515c843492e54bc471d1bbfb71"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "bytes": 5227,
+      "sha256": "82eb3b6d9fc66b9d900b8dfc51f3731d891cddf8a01eaf4b26532b953b8f6c8e"
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "bytes": 468,
+      "sha256": "56b55683999ce35f13f4600db77a832dc8bc393ee7c35d2f4582a7fcb9f4ac2a"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "bytes": 367,
+      "sha256": "25f9c78a2158c8e23acf06c8e568694232e8e7e647de12fe6def4f2da6f917c2"
     },
     {
       "path": "generated_images/.gitkeep",
@@ -100,14 +203,114 @@
       "sha256": "925446765939a617c8e1f022a8be6055b2417ffb99000f39cf8d213d0218c51c"
     },
     {
+      "path": "integrations/BROWSER_FLOW_SETUP.md",
+      "bytes": 2212,
+      "sha256": "dec27ba704aa8b2814c2078d38d1dd5e0a90ed0d46be331493e9fd4f96ed915b"
+    },
+    {
+      "path": "integrations/README.md",
+      "bytes": 1770,
+      "sha256": "394aef3fc16ce2a751a86855977d4d4dae178993b9ca0630df9295e017d531e0"
+    },
+    {
+      "path": "integrations/registry.json",
+      "bytes": 13471,
+      "sha256": "5b3e5384ac69e98b56bed392e6c8ddc07d98c3464c1a3c904b582933129ce46f"
+    },
+    {
+      "path": "integrations/repositories.txt",
+      "bytes": 1895,
+      "sha256": "c7ce381000bb626aad326659be4c7d7ef846a91f62b4199ba42478e6654d3e28"
+    },
+    {
+      "path": "legacy/BROWSER_FLOW_SETUP-v1.md",
+      "bytes": 2212,
+      "sha256": "6909d8b1fb262057a8f4ac84e7d349a501dfed0884206a755b2508a8c4447406"
+    },
+    {
+      "path": "legacy/main-v1.py",
+      "bytes": 31583,
+      "sha256": "1ac511f949efabd1d0162a2fe3b872c17d6f9583ec3a784768bc3634a94a12a2"
+    },
+    {
+      "path": "legacy/provider_gateway-v1.py",
+      "bytes": 49005,
+      "sha256": "581763f5535936bd4e7d19b77ce04573114a685de7657f1414bbd765a9e64803"
+    },
+    {
+      "path": "legacy/provider_gateway.py",
+      "bytes": 49005,
+      "sha256": "581763f5535936bd4e7d19b77ce04573114a685de7657f1414bbd765a9e64803"
+    },
+    {
+      "path": "legacy/static/hub-index-v1.html",
+      "bytes": 53477,
+      "sha256": "6388fa846f1c2abd581eb78e157fb9332fa673deffb286b6636fb3746083e256"
+    },
+    {
+      "path": "legacy/static/landing-v1.html",
+      "bytes": 11486,
+      "sha256": "be1aafe5ef28f6599e87088084a6980eea85a629272a82e15ab76cce9a4977de"
+    },
+    {
       "path": "main.py",
-      "bytes": 45295,
-      "sha256": "6fecc7156fc2940cd660faf421b9374eacb6f8dc50a583c433ddf646460cacda"
+      "bytes": 79310,
+      "sha256": "5e480783d0fb68ddc9c650fcbbad8baec04d4638f9a97668f2f89fc818929566"
+    },
+    {
+      "path": "mcp/README.md",
+      "bytes": 1886,
+      "sha256": "7b596cebc9dedf3eb53308640cadcc6ac2ffeff81c8e52bfa41f87449659d79f"
+    },
+    {
+      "path": "mcp/omniroute.mcp.example.json",
+      "bytes": 254,
+      "sha256": "6ee10bd143f00051501f285fe67a5543e4505de475eeb61c997317930ca446a7"
+    },
+    {
+      "path": "preview-environments/README.md",
+      "bytes": 1268,
+      "sha256": "128de2d3590a6036022e150337dc105408a5ba23fb5a8e7bd98538aa64f254c4"
+    },
+    {
+      "path": "preview-environments/html/example.html",
+      "bytes": 533,
+      "sha256": "68dc1fb2f41eb592f2571e23ad0cfdc97df7aa483cfe25498874730d0f9cb15e"
+    },
+    {
+      "path": "preview-environments/java/Dockerfile",
+      "bytes": 122,
+      "sha256": "5fb27c1c14353d26b62105518887c8971b8500293df6aad48dcba7234ed97ae1"
+    },
+    {
+      "path": "preview-environments/java/HelloMadEx.java",
+      "bytes": 157,
+      "sha256": "fe6ef5cda7e308bb0dc519f61fb1e5c70bc0b7a2b2de68dca0be3c1291c6fbd7"
+    },
+    {
+      "path": "preview-environments/php/Dockerfile",
+      "bytes": 118,
+      "sha256": "1f0731e4da9815102cb8cb8c9205317e57d8b543e0181f6515a73f570be88661"
+    },
+    {
+      "path": "preview-environments/php/index.php",
+      "bytes": 69,
+      "sha256": "1a23f1014607536292a1c28cc85302688863fe3a740f441f11b52d952aa529f6"
+    },
+    {
+      "path": "preview-environments/python/Dockerfile",
+      "bytes": 116,
+      "sha256": "bde7ec725c8a6e9ef37fd43ffb728a65835f12a1136c9850e175e5a4adca80cc"
+    },
+    {
+      "path": "preview-environments/python/example.py",
+      "bytes": 58,
+      "sha256": "0e1f592944d6883efdce288cec36d701e06c5603ccdfaadf7d940bd819c2b0d2"
     },
     {
       "path": "provider_catalog.py",
-      "bytes": 40369,
-      "sha256": "aa836078fcc1a6803067acec18d1cf3f77ba8fbebc1ac6a1ecee41a47d16ed7c"
+      "bytes": 42970,
+      "sha256": "568468acba7a29b94be08f4c9ff5ca8c3e779d61e5934b019132a3b9cf634e1f"
     },
     {
       "path": "pytest.ini",
@@ -116,8 +319,23 @@
     },
     {
       "path": "render.yaml",
-      "bytes": 1564,
-      "sha256": "c0dd4385254848057ea0acc1cb2d6bb46d6b9c85229f3f2a875eefc856b156d2"
+      "bytes": 2845,
+      "sha256": "7f63441ca4212bdf350c54951d856dd05b4584c5aa83a7d9d23a2530d0bd0bc4"
+    },
+    {
+      "path": "reports/BUILD_VALIDATION.md",
+      "bytes": 2648,
+      "sha256": "38f907928d5f3b8dfda20f06316f0d0a84265ecbd35677e0f29b15e99223fafb"
+    },
+    {
+      "path": "reports/INTEGRATION_MATRIX.md",
+      "bytes": 3074,
+      "sha256": "476f6909e297ae764c9706fbbeb6b622151daa786798af688e4bcdf411f5e293"
+    },
+    {
+      "path": "reports/SECURITY_NOTES.md",
+      "bytes": 1886,
+      "sha256": "564ce28bc3b87be6832d9108066e258fdeab2cc07c71ab62e757548fda71cf40"
     },
     {
       "path": "requirements-dev.txt",
@@ -125,19 +343,39 @@
       "sha256": "2c00e840c257ef3c420731292eb4397197b9c28c3c9b163686758887115b8e22"
     },
     {
-      "path": "requirements-lite.txt",
-      "bytes": 246,
-      "sha256": "373dc22cf6e98364368dcebbdb7ef36b2136e235b83d39d6ddf8acf8b18e2684"
+      "path": "requirements-integrations.txt",
+      "bytes": 683,
+      "sha256": "dc3f5091ca972e19cc33af7888fbb01b1b7c7af847d3d62a56c8103d615834a7"
     },
     {
-      "path": "requirements-mobile.txt",
+      "path": "requirements-lite.txt",
+      "bytes": 304,
+      "sha256": "da45b48642dae50eaae485d9cea1cf1b1c9c48c55653fbb3032b0cfb1d2dc893"
+    },
+    {
+      "path": "requirements-mobile-v1.txt",
       "bytes": 311,
       "sha256": "c428d06fb12c422c02a74fef2490327f2155ac8f2ed81b17b70129d593c4181b"
     },
     {
+      "path": "requirements-mobile.txt",
+      "bytes": 352,
+      "sha256": "76d3bf9e870d8fce0bd65092aacf56dbc618c6b8e4ab9196447f8c3c56554ee0"
+    },
+    {
       "path": "requirements.txt",
-      "bytes": 344,
-      "sha256": "767974205fe0338d648f5e96bea8d674e3638e5de941daf14c1772556e20c34d"
+      "bytes": 402,
+      "sha256": "6d64ee76b4173c3aeb543e0a2ad70a4c12c8f89d2f35f87daee6b5db9e38b856"
+    },
+    {
+      "path": "reverse-engineering/README.md",
+      "bytes": 787,
+      "sha256": "13ec63e44c45f229724fc8d6ff063fe396b17895fdb88fab5e1112a4dc3ae4e2"
+    },
+    {
+      "path": "robots.txt",
+      "bytes": 77,
+      "sha256": "83f31d5bbd54270c394c077f4da215f27c3895f6628643b56de71e7b6dbcd033"
     },
     {
       "path": "runtime_env.py",
@@ -145,14 +383,104 @@
       "sha256": "7e594aa996282203e0fffbad0e2940c2c0fc43e9d9569dd7fbffda1360789bb7"
     },
     {
+      "path": "scripts/audit_project.py",
+      "bytes": 5364,
+      "sha256": "eae6f36c901b42faf6617070342376422ae59729a09ce54d9e0d820892d59058"
+    },
+    {
       "path": "scripts/chromium-safe",
       "bytes": 888,
       "sha256": "4b1f2782ef3271eabe24516cbfb385632d9d9b65e1c3b298441f0910a41bbae2"
     },
     {
+      "path": "scripts/fetch_upstreams.py",
+      "bytes": 2253,
+      "sha256": "877d4615548632d9dc0cd5fb4a0b924bd33983d81702e571898c64831d6cb73e"
+    },
+    {
+      "path": "static/app.js",
+      "bytes": 50323,
+      "sha256": "450bcab22f64308f70df3ac7d5796d6f9f4d9690ce96d8e902a3271eb60af4ce"
+    },
+    {
+      "path": "static/assets/logo-demo.mp4",
+      "bytes": 10652767,
+      "sha256": "3e644194e9effc83d4a3883b085b001db1c23ea597fbb3b7fbcb8d912064c210"
+    },
+    {
+      "path": "static/assets/logo-mark.svg",
+      "bytes": 981,
+      "sha256": "6859df82738340c760731d19f293182fbecfb605110086a30115c7e53b2403f5"
+    },
+    {
+      "path": "static/assets/mad-x-icon.png",
+      "bytes": 725837,
+      "sha256": "1cb6bc0721763bc0d061fd59c0c38f91bb44bacd37efc2b09ed2b8c36864243a"
+    },
+    {
+      "path": "static/assets/mad-x-logo.svg",
+      "bytes": 981,
+      "sha256": "6859df82738340c760731d19f293182fbecfb605110086a30115c7e53b2403f5"
+    },
+    {
+      "path": "static/assets/madex-icon.png",
+      "bytes": 725837,
+      "sha256": "1cb6bc0721763bc0d061fd59c0c38f91bb44bacd37efc2b09ed2b8c36864243a"
+    },
+    {
+      "path": "static/diagnostics.css",
+      "bytes": 4324,
+      "sha256": "06953fdc6e6faeceb021946030ce15079023c64672a680e6361268f89195cc8c"
+    },
+    {
+      "path": "static/diagnostics.html",
+      "bytes": 3475,
+      "sha256": "948b8bfa464a8cdbb911b440da5ebdd29eed9bb9b9f1af5d82b2e643d1a86957"
+    },
+    {
+      "path": "static/diagnostics.js",
+      "bytes": 4719,
+      "sha256": "ab858f281313e9b18fa839e1069655ffb9452efc4bd70a701dca16da90d3011c"
+    },
+    {
+      "path": "static/hub/index.html",
+      "bytes": 53477,
+      "sha256": "6388fa846f1c2abd581eb78e157fb9332fa673deffb286b6636fb3746083e256"
+    },
+    {
       "path": "static/index.html",
-      "bytes": 51305,
-      "sha256": "e2b4a5bcb1853ca4b03767214784b9c008fc7279a91674d1e51367c1d85fc5f8"
+      "bytes": 22784,
+      "sha256": "00a7472b5c20b1a1f42d84b6d7a0e197b2e6437402125d8f31d54a1457672d86"
+    },
+    {
+      "path": "static/landing.css",
+      "bytes": 17640,
+      "sha256": "fcec0e882356554fdca9bb133f4e132678ed20d2f021fbb8aa78ab594b03b946"
+    },
+    {
+      "path": "static/landing.html",
+      "bytes": 10495,
+      "sha256": "a8006c2eab6f9652c4ed3ee972e773cba752d54faf00f5e69dcc863d9987ba5d"
+    },
+    {
+      "path": "static/landing.js",
+      "bytes": 1412,
+      "sha256": "bf8a8f615f2fdb393968c8ad07aaf35a69957b1614e8b2ea4d9193768a1d297b"
+    },
+    {
+      "path": "static/privacy.html",
+      "bytes": 2567,
+      "sha256": "c72cd8a599264c84939e4fa4d7a44f1b1b4547168c4b30448fa48772ed965477"
+    },
+    {
+      "path": "static/styles.css",
+      "bytes": 42533,
+      "sha256": "6e10078db525584a9e70b5c35b808f56475947b6775d014b61cc19dc42e2e601"
+    },
+    {
+      "path": "static/terms.html",
+      "bytes": 2800,
+      "sha256": "d993ffe093e7c7ec7dba4320f894446d7b0e0c77b8bbe0789b22eb8de17d200f"
     },
     {
       "path": "test_universal.py",
@@ -165,9 +493,14 @@
       "sha256": "51ca215d7b2f352ac6351d8fbace4ef9a8801f8e1ca35e8255a0acae7b03a4ad"
     },
     {
+      "path": "tests/test_hybrid_features.py",
+      "bytes": 7845,
+      "sha256": "db04fa6c9862780fe3f3fc66ecebd1bcaebf71c7c19ac2f8302063329e9aff27"
+    },
+    {
       "path": "tests/test_providers_and_runtime.py",
-      "bytes": 19016,
-      "sha256": "25edc5e2333f3a73e26fc97d146114c5c0a0f33577a45481d5db1e34be36ef87"
+      "bytes": 20409,
+      "sha256": "6757682d105ebef8ff87b19d28f70a95aa68c354a0b8a44459b22957c72c294a"
     },
     {
       "path": "tests/test_universal.py",
@@ -175,33 +508,9 @@
       "sha256": "a398fc98ac519e2b7d0dbd006a29ef7f8e207fa5182503cdfeac80c79bd136b2"
     },
     {
-      "path": "integrations/registry.json",
-      "size_bytes": 8170,
-      "sha256": "e4e58bb941beda6a2e4d6505a8718cdb00fc9532fff190a06de490c05c685560"
-    },
-    {
-      "path": "integrations/repositories.txt",
-      "size_bytes": 1900,
-      "sha256": "be6b645a75663cf48f2fca39e66280cf589e8ecb665aca7afe3fa9a05b93c2e2"
-    },
-    {
-      "path": "integrations/README.md",
-      "size_bytes": 4181,
-      "sha256": "ea29150eb06107510e8bd655e9b2937304dc400798afbf65c0b696979100f3d6"
-    },
-    {
-      "path": "requirements-integrations.txt",
-      "size_bytes": 683,
-      "sha256": "dc3f5091ca972e19cc33af7888fbb01b1b7c7af847d3d62a56c8103d615834a7"
+      "path": "uploaded_files/.gitkeep",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
-  ],
-  "limitations": [
-    "Official APIs require their own provider keys and may incur charges.",
-    "Community adapters are unofficial, may require sessions or browsers, and are not guaranteed.",
-    "Visible model IDs do not guarantee access, quota or successful generation.",
-    "Ollama Local requires a reachable Ollama server and a downloaded model.",
-    "ChatGPT web/community routes are experimental; OpenAI API access is distinct from a ChatGPT subscription.",
-    "DuckDuckGo AI Chat has no stable supported public chat API in this project and is not scraped.",
-    "Real provider calls and third-party browser-provider reliability are not guaranteed by offline tests."
   ]
 }

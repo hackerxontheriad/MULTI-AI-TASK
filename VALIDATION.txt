@@ -1,26 +1,17 @@
-MADEX Single-Model AI Hub v15.2.0 — validation record (25 October 2026)
+MAD X Hybrid AI Studio v16.1.0 — validation record (26 October 2026)
 
 PASS (run in the build sandbox)
-- py_compile of main.py, agents.py, provider_catalog.py, http_client.py, runtime_env.py
-- 66 offline tests pass (tests/test_universal.py, tests/test_providers_and_runtime.py, tests/test_agents.py)
-  NOTE: the sandbox had no network, so FastAPI/pydantic/pytest were replaced by minimal stand-ins to execute the
-  real project code. Run `pytest -q` in a normal environment to confirm against the real libraries.
-- Frontend: `node --check` on the inline JS; executed in real Chromium (Playwright, mobile viewport) against a mocked
-  backend: Agents tab, route picker, result cards (model text rendered as text, not HTML), failed-agent card,
-  council/plan mode toggles, diagnostics panel, grouped model selector, image model list; zero JS errors.
-- scripts/chromium-safe: syntax check + behaviour test with a fake binary (headless on/off by DISPLAY, exit 127 when missing).
-- Adapters (mocked HTTP): Groq/Mistral (OpenAI-compatible), Gemini (key in header, thought parts skipped, MAX_TOKENS error),
-  Anthropic (temperature cap, alternation), OpenAI Responses (incomplete), Cloudflare (account ID validation),
-  Pollinations/Cloudflare images (non-image bytes rejected), Ollama live list, redaction of keys in errors.
+- Python syntax/bytecode compilation: main.py, agents.py, agent_router.py, provider_catalog.py, runtime_env.py, http_client.py.
+- Offline pytest suite: 74 passed, including hybrid feature tests for page routes/security headers, protected diagnostics, minimal public health, catalog authorization, task planning, six-agent fallback flow and arbitrary binary file upload/download/list/delete.
+- Frontend JavaScript syntax: `node --check static/app.js`.
+- Archive integrity and expected-file/security-exclusion checks are run when the release ZIP is created.
 
-NOT VERIFIED
-- No real provider call was made (no keys, no network). Free-tier limits and model IDs can change; IDs marked "verify ID"
-  are presets and are replaced by the provider's live list once a key is configured.
-- Docker image was not built. Chromium inside the image was not launched (the sandbox browser is not the image's browser).
-- Pollinations gen.pollinations.ai and Cloudflare image/chat request shapes follow current docs but were not called live.
-- g4f 8.x community adapters were not exercised; they remain experimental. No patch can guarantee third-party browser providers always start.
-- LiteLLM Proxy and PawanOsman-compatible routes were tested offline for configuration/catalog behavior only; no real endpoints were configured or called.
-- DuckDuckGo AI Chat was not integrated because the project does not rely on an undocumented scraping/reverse-engineered chat endpoint.
+NOT VERIFIED (requires external services or separate build environment)
+- No live model/provider API calls were made; actual model availability, free-tier limits, quota and latency depend on provider status and configured credentials.
+- Google OAuth requires a real Google OAuth client ID, authorized redirect URIs and a secure deployment secret; end-to-end OAuth was not verified.
+- Docker image build and Render deployment were not run. Deployment settings are templates/placeholders and must be configured before production.
+- Local/browser playback of MP4 is supported, but generating new videos requires a compatible configured provider; fully free hosted video generation is not guaranteed.
+- Arbitrary files can be stored/downloaded, but unsupported binary files are not automatically understood by every AI model; only supported small text/code files are attached as prompt context.
+- GitHub projects in `integrations/registry.json` are documented as compatible references/optional integrations; the package does not claim to vendor every external repository.
 
-
-v16 ecosystem pack: includes integrations/registry.json and integrations/README.md for all requested targets. Ollama hosted endpoint auth and diagnostics probe added. Run pytest -q in an environment with requirements-dev.txt installed. Live provider availability remains credential/network dependent.
+Recommended pre-production checklist: set a long random API_ACCESS_TOKEN, DIAGNOSTICS_PASSWORD and SESSION_ENCRYPTION_KEY; configure GOOGLE_CLIENT_ID and provider credentials; verify HTTPS/cookie settings and OAuth callback URLs; set upload storage/retention limits; review each optional upstream project's license and security before deployment.

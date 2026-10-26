@@ -1,153 +1,116 @@
-# MADEX Single-Model AI Hub v15.2
+# MAD X Hybrid AI Studio — v17.0.0
 
-A mobile-friendly FastAPI gateway where **you choose the exact provider/model for every request**. Version 15.1 adds
-zero-cost routes (free-tier APIs + local open-source models), real Chromium/SSL handling, secret-safe errors, and
-**multi-agent modes** (Compare, Council, Planner).
+A free-first AI workspace built from the two supplied project ZIPs. The current runtime uses the v16.1 single-route FastAPI backend, while preserving the original browser/preview materials, brand assets and legacy gateway as an isolated reference. The landing page has been redesigned with emerald/metallic-gold animation; a TSX React source version is included separately.
 
-## Single-route guarantee (unchanged)
+## What is actually included
 
-- A request calls only the provider/model you selected. If it fails you get an error with `fallback_used: false`.
-- Multi-agent runs follow the same rule: every agent is bound to a route **you** ticked. A failed agent reports its own
-  error; it is never re-routed and its answer is never invented.
-- The gateway only retries the **same URL** on transient network/TLS/429/5xx errors. That is not model fallback.
+- **Single selected-model requests:** `POST /v1/chat/completions` calls the named provider/model route and reports errors instead of silently swapping providers. A task workflow can use explicit configured fallback routes; its results report which routes were used.
+- **Six-agent workflow:** planner, researcher, builder, reviewer, optimizer and tester. Results depend on the selected/configured routes, quotas and host resources.
+- **Chat + code tools:** assistant code blocks support Copy and Download. HTML/SVG adds Run and Preview in a sandboxed iframe. This is a browser preview, not a general Python/Java/PHP code execution engine.
+- **Files and media:** authenticated, session-scoped upload/list/download/delete endpoints; local previews for supported formats; a real MP4 asset is retained.
+- **Authentication:** server verification of Google ID tokens with `email_verified == true`, encrypted HttpOnly session cookies, API access-token mode, rate limits and separate admin diagnostics password.
+- **Connector status:** `/api/connectors/status?probe=true` (requires a verified Google session or valid bearer token) reports configuration and probes the configured OpenAI-compatible gateway `/models` endpoints. A successful probe is not a promise that text generation or quota is available.
+- **Provider adapters:** official/free-tier API adapters, local/hosted Ollama, LiteLLM/PawanOsman-compatible URLs, and configurable OmniRoute, 9Router, New-API and One-API compatible gateways.
+- **MCP setup:** OmniRoute MCP configuration example and guide are included. The OmniRoute process must run separately; the Python app does not start, provision or extend OmniRoute tokens. Current upstream installation requirements specify Node.js `>=22.22.2 <23` or `>=24 <27`; the build environment here has Node `22.16.0`, so OmniRoute itself was not installed or launched during validation. See the [upstream setup guide](https://github.com/cheaper-inference/OmniRoute/wiki/Setup-Guide) and [MCP guide](https://github.com/cheaper-inference/OmniRoute/wiki/mcp-server).
+- **Android source wrapper:** Gradle, Java, manifest and resources are included. This package contains Android source code, **not a compiled/signed APK**.
+- **Preview runner examples:** HTML, Java, PHP and Python example folders plus Dockerfiles are present.
+- **Static RE/audit utility:** `scripts/audit_project.py` inventories a folder/ZIP/APK/AAB and flags review candidates without executing archive contents.
+- **Both logos:** current `mad-x-logo.svg`, legacy `logo-mark.svg`, and both old/new icon PNG paths are preserved. The original landing page is stored as `legacy/static/landing-v1.html`.
 
-## Zero-cost operation
+## Start locally
 
-Set any of these keys on the server (`.env` or host environment). All were free-tier at the time of writing; limits and
-terms change, so re-check each provider. **Free tiers may use your prompts to improve products — do not send private data.**
+Python 3.11+ is recommended.
 
-| Route | Env var(s) | Get a key | Notes |
-|---|---|---|---|
-| Groq API | `GROQ_API_KEY` | console.groq.com/keys | free tier, per-model rate limits |
-| Cerebras API | `CEREBRAS_API_KEY` | cloud.cerebras.ai | small context caps on free keys |
-| Mistral API | `MISTRAL_API_KEY` | console.mistral.ai | "Experiment" plan |
-| Gemini API | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | aistudio.google.com/apikey | free tier; not offered in EEA/UK/CH |
-| GitHub Models | `GITHUB_MODELS_TOKEN` / `GITHUB_TOKEN` | fine-grained token with `models:read` | prototyping limits |
-| Hugging Face API | `HF_TOKEN` | huggingface.co/settings/tokens | monthly free credits |
-| Cloudflare Workers AI | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com | daily free allowance; also image route |
-| Pollinations API | `POLLINATIONS_API_KEY` | enter.pollinations.ai | text + **image** |
-| Ollama Local | `OLLAMA_BASE_URL` | install Ollama | open-source models on your own hardware |
+```bash
+python -m venv .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows: .venv\\Scripts\\activate
+pip install -r requirements-lite.txt
+cp .env.example .env
+```
 
-Paid/other official routes remain: OpenAI, Claude, xAI Grok, Meta Model API, DeepSeek, Perplexity.
-When a key is set the provider's own model list replaces the preset IDs (installed models for Ollama), so stale preset
-IDs are harmless. OpenRouter/KiloCode aliases stay blocked by design.
+Generate three independent secrets/configuration values:
 
-## Multi-agent modes (`POST /v1/agents/run`, UI tab "Agents")
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
 
-Patterns inspired by the GitHub topics *multi-ai-agents* / *ai-agents*, implemented natively with no extra dependencies:
+Set the first value as `API_ACCESS_TOKEN`, the second as `DIAGNOSTICS_PASSWORD`, and the Fernet key as `SESSION_ENCRYPTION_KEY`. Set `GOOGLE_CLIENT_ID` to a Google Cloud **Web application** OAuth client ID and add the correct public HTTPS origin to its authorized JavaScript origins. Set `PUBLIC_SITE_URL` to your canonical deployed HTTPS URL. Provider keys belong only in `.env` or your hosting provider's secret environment. On local plain HTTP only, `COOKIE_SECURE=false` may be needed for development; keep `COOKIE_SECURE=true` in public HTTPS deployment.
 
-| Mode | What happens | Calls |
+```bash
+uvicorn main:app --host 127.0.0.1 --port 10000
+```
+
+Open `http://127.0.0.1:10000/` for the new landing page or `/chat` for the workspace. Use the token you created in the workspace Settings only for a private/owner-controlled installation; never publish that token or embed it in a public APK/frontend.
+
+## Provider configuration
+
+Free-first API options (quotas, access and terms vary):
+
+- `GEMINI_API_KEY` / `GOOGLE_API_KEY`
+- `GROQ_API_KEY`
+- `CEREBRAS_API_KEY`
+- `MISTRAL_API_KEY`
+- `GITHUB_MODELS_TOKEN`
+- `HF_TOKEN`
+- `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`
+- `POLLINATIONS_API_KEY`
+- `OLLAMA_BASE_URL` for an Ollama instance you control
+
+For compatible gateways, configure each separately:
+
+| Gateway | Required settings | Notes |
 |---|---|---|
-| `compare` | same prompt to 2–6 models, side by side | N |
-| `council` | members answer; with `rounds: 2` they critique each other; a **judge** merges | N (+N) +1 |
-| `plan` | **planner** returns JSON subtasks → workers (round-robin over your list) → **synthesiser** | 1 + subtasks + 1 |
+| OmniRoute | `OMNIROUTE_BASE_URL`, `OMNIROUTE_API_KEY`, optional `OMNIROUTE_MODELS` | Run OmniRoute separately; create an endpoint key in its dashboard. |
+| 9Router | `NINE_ROUTER_BASE_URL`, `NINE_ROUTER_API_KEY`, optional `NINE_ROUTER_MODELS` | Exact upstream repository/API URL still needs verification. |
+| New-API | `NEW_API_BASE_URL`, `NEW_API_API_KEY`, optional `NEW_API_MODELS` | Separate service, channels and account configuration required. |
+| One-API | `ONE_API_BASE_URL`, `ONE_API_API_KEY`, optional `ONE_API_MODELS` | Separate service and account setup required. |
+| LiteLLM | `LITELLM_BASE_URL`, `LITELLM_API_KEY`, optional `LITELLM_MODELS` | Authorized proxy you control. |
+| PawanOsman-compatible | `PAWANOSMAN_BASE_URL`, `PAWANOSMAN_API_KEY`, optional `PAWANOSMAN_MODELS` | Authorized OpenAI-compatible endpoint only. |
 
-Safeguards: max 6 routes and 16 model calls per run, 3 concurrent calls (free tiers), peer text is marked untrusted
-before being shown to other models, an invalid planner plan returns an error instead of a made-up plan.
+Use exact model IDs returned by your own gateway's `/v1/models` or its dashboard. The starter examples are not an uptime guarantee. No endpoint/key is filled with a made-up live value.
 
-```bash
-curl -X POST http://127.0.0.1:10000/v1/agents/run -H 'Content-Type: application/json' -d '{
-  "mode":"council","prompt":"Is SQLite fine for a small SaaS?",
-  "routes":["Groq API|llama-3.3-70b-versatile","Mistral API|mistral-small-latest"],
-  "judge":"Groq API|openai/gpt-oss-120b","rounds":2}'
-```
+## OmniRoute MCP setup
 
-## Optional compatible proxies
+See [`mcp/README.md`](mcp/README.md) and [`mcp/omniroute.mcp.example.json`](mcp/omniroute.mcp.example.json). The MCP server is provided by the separate OmniRoute project (for example `omniroute --mcp` for a local install). Use the transport your MCP client supports and configure the right URL/key. MAD X cannot mint or extend OmniRoute account tokens automatically.
 
-The catalog includes two **user-configured** OpenAI-compatible routes; neither points to a bundled public endpoint:
+## Frontend / TSX
 
-- `LiteLLM Proxy`: set `LITELLM_BASE_URL` (for example your own `http://127.0.0.1:4000/v1` proxy), `LITELLM_API_KEY`, and optionally `LITELLM_MODELS` as a comma-separated list.
-- `PawanOsman Compatible API`: set `PAWANOSMAN_BASE_URL`, `PAWANOSMAN_API_KEY`, and optionally `PAWANOSMAN_MODELS`. This only works if the endpoint you control/are authorized to use exposes the OpenAI-compatible `/chat/completions` API.
+The production `/` route currently serves `static/landing.html` so the Python app works without a Node build step. The matching React/TSX source is in `frontend/src/main.tsx`; see `frontend/README.md` to build the separate TSX preview. TSX and minification do not stop reverse engineering: browser-delivered code is inspectable, so secrets must stay server-side.
 
-These routes never guess a public service URL and never silently switch models. `DuckDuckGo AI Chat` does not have a stable, supported public chat API in this project; it is not scraped or reverse-engineered here. Use a documented search API or a provider route you are authorized to call instead. The project does not claim that every community/browser provider is reliable or production-ready.
+## External repositories and source files
 
-## Fixes in 15.2
+`integrations/registry.json` lists the user-requested projects and older ecosystem candidates with a clear status. The separate upstream projects are **not all bundled into this ZIP**. GitHub access failed in this build environment, and some projects are separate Node apps, GPU services, API gateways or have license/dependency requirements incompatible with installing wholesale into this FastAPI runtime. The safe opt-in fetcher `scripts/fetch_upstreams.py` can shallow-clone the explicitly listed repositories where you have network access; it only fetches files and does not install or execute them. Inspect the source license and dependencies before using. `9Router` still needs the exact owner/repository URL.
 
-- Canonicalise copied g4f provider IDs with accidental whitespace after `g4f:`.
-- Improve shared-Chrome/DBus error hints so diagnostics distinguish a browser warning from a confirmed browser startup failure.
-- Ignore and remove stale Chrome environment paths so they cannot mask a usable browser executable.
-- Add configurable LiteLLM Proxy and PawanOsman-compatible OpenAI API routes, requiring explicit user-supplied base URLs and keys.
-- Add regression tests for provider-ID normalisation, compatible-proxy configuration, and shared-Chrome diagnostics.
+Two ZIPs were provided in this turn; no extra 10–14 individual report attachments were available in this workspace. Previously present `UPSTREAM_RESEARCH-v1.md` and `UPSTREAM_INTEGRATIONS-v1.md` are preserved.
 
-## Fixes in 15.1
-
-- **Chromium**: no more hard-coded `/usr/bin/chromium`; a real binary is detected (env → wrapper → PATH → known paths),
-  stale env paths are removed, containers get `--no-sandbox`/`--disable-dev-shm-usage`/headless via `scripts/chromium-safe`,
-  and `/v1/diagnostics` actually launches the browser once and reports why it fails (root, missing libs, low RAM).
-- **SSL/network**: CA bundle auto-configured (certifi/system/`CA_BUNDLE`), bounded same-URL retries with backoff and
-  `Retry-After`, actionable hints (certificate vs DNS vs proxy vs timeout). TLS verification is **never** disabled.
-- **Secret leak**: Gemini used `?key=` in the URL and raw exception text was returned to clients. The key is now a header and
-  every client-visible string is redacted.
-- **`.env` was never loaded** despite the old README. A dependency-free loader now reads it (real env vars win).
-- Stuck community calls no longer exhaust the worker pool silently (separate pools, `503 g4f_workers_busy`).
-- Per-provider fixes: Anthropic temperature cap and role alternation, Gemini thinking-token/empty-answer errors,
-  `developer`/`tool` role normalisation, Mistral/Cerebras temperature caps, `max_completion_tokens` where required.
-- `/health` no longer imports g4f (fast health checks); failed community-catalog fetches retry after 60 s, not 15 min.
-- Optional per-client rate limit (`RATE_LIMIT_PER_MIN`) protects your free quotas; constant-time token comparison.
-
-## Run locally
+## Reverse-engineering/static audit
 
 ```bash
-python -m venv .venv && source .venv/bin/activate       # Windows: .venv\Scripts\Activate.ps1
-pip install -r requirements-lite.txt                    # free-tier APIs + Ollama, no browser
-# pip install -r requirements.txt                       # + community g4f adapters (needs Chromium)
-cp .env.example .env                                    # add at least one free key
-uvicorn main:app --host 0.0.0.0 --port 10000
+python scripts/audit_project.py /path/to/project-or-archive.zip --json reports/audit.json
 ```
 
-Open `http://127.0.0.1:10000/`, press **Run diagnostics**, then pick routes marked "Free & ready".
+This is a heuristic static inventory tool, not a complete security guarantee. It does not run code in uploaded archives. Use it only for assets you own or are authorized to inspect.
 
-### Docker / Render
+## Render deployment
+
+`render.yaml` and the Dockerfile are retained. The default deployment selects `requirements-lite.txt` and skips Chromium to fit small hosts; community browser-backed adapters may not be available in that mode. Add the environment secrets in Render's dashboard and set `PUBLIC_SITE_URL`. If the Render service is stopped, its hosted API is not reachable; local operation is possible only when dependencies and provider endpoints are configured locally. A free plan does not mean provider inference or cloud compute is unlimited.
+
+## Android wrapper
+
+Open `android-wrapper/` in Android Studio, configure the correct HTTPS service URL in `MainActivity.java`, then build and sign the APK with your own Android signing key. This environment has no Android SDK/Gradle installation available, so an APK has not been compiled or signed in this ZIP. Do not put provider or app access tokens into the APK.
+
+## Checks
 
 ```bash
-docker build -t madex .                                                    # full: Chromium + g4f
-docker build -t madex-lite --build-arg INSTALL_BROWSER=0 --build-arg REQUIREMENTS_FILE=requirements-lite.txt .
+pip install -r requirements-dev.txt
+pytest -q
+python -m py_compile main.py agents.py provider_catalog.py runtime_env.py http_client.py agent_router.py scripts/audit_project.py scripts/fetch_upstreams.py
+node --check static/app.js
+node --check static/landing.js
+node --check static/diagnostics.js
 ```
 
-`render.yaml` builds the **lite** image (free Render plans have 512 MB RAM — too little for Chromium). Set
-`API_ACCESS_TOKEN` before exposing the service. For community adapters use a paid plan with ≥1 GB RAM and set
-`INSTALL_BROWSER=1`, `REQUIREMENTS_FILE=requirements.txt`.
-
-### Android / Termux
-
-`pkg install python chromium`, then `pip install -r requirements-mobile.txt`. Pydroid cannot run browser providers.
-
-## Endpoints
-
-| Endpoint | Purpose |
-|---|---|
-| `GET /` | UI (Chat, Agents, Image, Video) |
-| `GET /health` | fast status (never returns keys) |
-| `GET /v1/diagnostics` | CA bundle, real Chromium launch probe, g4f worker slots, configured free routes |
-| `GET /v1/catalog[?refresh=true]` · `GET /v1/models` | catalog (free/ready flags) |
-| `POST /v1/chat/completions` | OpenAI-compatible chat (one route) |
-| `POST /v1/agents/run` | compare / council / plan |
-| `POST /v1/images/generations` | `Pollinations API\|flux`, `Cloudflare Workers AI\|@cf/black-forest-labs/flux-1-schnell`, or a g4f row |
-| `POST /v1/video/generate` | only if g4f exposes a real video API; otherwise 503, never fake media |
-
-Error codes: `424` missing/rejected key, `429` provider or gateway rate limit (with `Retry-After`), `503` busy workers,
-`504` timeout, `502` provider failure. Responses include `hint` with the likely fix.
-
-## Tests
-
-```bash
-pip install -r requirements-dev.txt && pytest -q
-```
-All tests are offline (mocked HTTP, stub models, fake browser binary).
-
-## What I could not verify
-
-Real provider calls, a Docker build and the full FastAPI/pytest run were not possible in the sandbox (no network).
-Model IDs marked "verify ID" are presets; the live model list is the source of truth once a key is set.
-The Pollinations (`gen.pollinations.ai`) and Cloudflare image/chat endpoints follow current docs but were not called live.
-
-## Project notes
-
-Not affiliated with OpenAI, Google, Anthropic, xAI, Meta, DeepSeek, Perplexity, Groq, Mistral or the g4f project.
-Community adapters are unofficial; respect each provider's terms and do not use them to bypass access controls.
-Upstream g4f: https://github.com/xtekky/gpt4free · list: https://github.com/Free-AI-Things/g4f-working
-
-
-## v16 ecosystem integration pack
-
-See [`integrations/README.md`](integrations/README.md) and [`integrations/registry.json`](integrations/registry.json) for the complete requested repository map, live/native versus external/optional integration states, Render setup, and free-tier limits. This release adds authenticated Ollama endpoint support and an Ollama reachability probe in `/v1/diagnostics`. Optional framework dependencies are isolated in `requirements-integrations.txt` and are not installed on Render free by default.
+Source/license references are listed in [`integrations/registry.json`](integrations/registry.json). A configured or reachable route is not the same thing as verified model generation.

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: madex-free-multi-ai
+    name: mad-x-hybrid-studio
     runtime: docker
     plan: free
     healthCheckPath: /health
@@ -14,6 +14,28 @@ services:
         value: requirements-lite.txt
       - key: API_ACCESS_TOKEN
         sync: false
+      - key: REQUIRE_LOGIN
+        value: "true"
+      - key: DIAGNOSTICS_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: ALLOWED_LOGIN_EMAILS
+        sync: false
+      - key: PUBLIC_SITE_URL
+        sync: false
+      - key: SESSION_ENCRYPTION_KEY
+        sync: false
+      - key: SESSION_DAYS
+        value: "30"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: FREE_FALLBACK_MODEL
+        sync: false
+      - key: PAID_FALLBACK_MODEL
+        sync: false
+      - key: MAX_UPLOAD_MB
+        value: "25"
       - key: GROQ_API_KEY
         sync: false
       - key: CEREBRAS_API_KEY
@@ -43,6 +65,30 @@ services:
       - key: PAWANOSMAN_API_KEY
         sync: false
       - key: PAWANOSMAN_MODELS
+        sync: false
+      - key: OMNIROUTE_BASE_URL
+        sync: false
+      - key: OMNIROUTE_API_KEY
+        sync: false
+      - key: OMNIROUTE_MODELS
+        sync: false
+      - key: NINE_ROUTER_BASE_URL
+        sync: false
+      - key: NINE_ROUTER_API_KEY
+        sync: false
+      - key: NINE_ROUTER_MODELS
+        sync: false
+      - key: NEW_API_BASE_URL
+        sync: false
+      - key: NEW_API_API_KEY
+        sync: false
+      - key: NEW_API_MODELS
+        sync: false
+      - key: ONE_API_BASE_URL
+        sync: false
+      - key: ONE_API_API_KEY
+        sync: false
+      - key: ONE_API_MODELS
         sync: false
       - key: OLLAMA_BASE_URL
         value: http://127.0.0.1:11434

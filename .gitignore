@@ -7,3 +7,9 @@ generated_images/*
 !generated_images/.gitkeep
 generated_media/*
 !generated_media/.gitkeep
+.env.*
+!.env.example
+uploaded_files/*
+!uploaded_files/.gitkeep
+*.log
+.DS_Store

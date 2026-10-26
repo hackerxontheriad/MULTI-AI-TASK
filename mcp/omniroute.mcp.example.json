@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "omniroute": {
+      "command": "omniroute",
+      "args": ["--mcp"],
+      "env": {
+        "OMNIROUTE_BASE_URL": "http://localhost:20128",
+        "OMNIROUTE_API_KEY": "SET_IN_YOUR_LOCAL_SECRET_ENV_NOT_HERE"
+      }
+    }
+  }
+}
