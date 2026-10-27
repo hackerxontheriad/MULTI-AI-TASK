@@ -155,6 +155,12 @@ def get_archive(project_id: str, owner: str | None = None) -> tuple[bytes, str] 
             return None
         if row.archive_blob:
             return bytes(row.archive_blob), row.title
+        if row.archive_path and row.archive_path.startswith("firebase://"):
+            import firebase_files
+            try:
+                return firebase_files.download_project_artifact(row.archive_path), row.title
+            except Exception as exc:
+                raise RuntimeError("Firebase project ZIP download failed; check Storage bucket and service-account permissions.") from exc
         if row.archive_path and Path(row.archive_path).is_file():
             return Path(row.archive_path).read_bytes(), row.title
         return None
@@ -167,7 +173,7 @@ def admin_recent_projects(limit: int = 30) -> list[dict[str, Any]]:
                  "status": r.status, "file_count": r.file_count,
                  "created_at": r.created_at.isoformat() if r.created_at else None,
                  "updated_at": r.updated_at.isoformat() if r.updated_at else None,
-                 "archive_available": bool(r.archive_blob or (r.archive_path and Path(r.archive_path).is_file()))}
+                 "archive_available": bool(r.archive_blob or (r.archive_path and (r.archive_path.startswith("firebase://") or Path(r.archive_path).is_file())))}
                 for r in rows]
 
 
@@ -182,7 +188,7 @@ def list_projects(owner: str | None = None, limit: int = 50) -> list[dict[str, A
 def _project_dict(row: Project) -> dict[str, Any]:
     return {"id": row.id, "owner_subject": row.owner_subject, "title": row.title, "prompt": row.prompt,
             "status": row.status, "planner_model": row.planner_model, "file_count": row.file_count,
-            "archive_available": bool(row.archive_blob or (row.archive_path and Path(row.archive_path).is_file())),
+            "archive_available": bool(row.archive_blob or (row.archive_path and (row.archive_path.startswith("firebase://") or Path(row.archive_path).is_file()))),
             "error_summary": row.error_summary, "created_at": row.created_at.isoformat() if row.created_at else None,
             "updated_at": row.updated_at.isoformat() if row.updated_at else None}
 

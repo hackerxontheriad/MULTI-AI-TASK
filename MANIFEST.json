@@ -1,8 +1,8 @@
 {
   "project": "MADX Hybrid Studio",
-  "version": "18.0.0",
+  "version": "18.1.0",
   "generated_at": "2026-10-27",
-  "file_count": 101,
+  "file_count": 106,
   "files": [
     {
       "path": ".dockerignore",
@@ -11,8 +11,13 @@
     },
     {
       "path": ".env.example",
-      "bytes": 2011,
-      "sha256": "c524901a8f193e74661f2e5411e4597058a8389cc2959fbfc323399748540039"
+      "bytes": 2573,
+      "sha256": "dd360b3ca612c54b0be1dacc067aec61cc9e14490d46f8c6167929bf95078799"
+    },
+    {
+      "path": ".env.free.example",
+      "bytes": 1796,
+      "sha256": "0c916825e13e9ad416e65663f9b82d34d6bcad89813314bbf6ec27fa893f8b1d"
     },
     {
       "path": ".gitignore",
@@ -25,14 +30,24 @@
       "sha256": "daa2c355f8144adf83096d3f7a797bce4c59e3e9f2b351688ea274bf3e18bab6"
     },
     {
+      "path": "API_CONNECTORS_RENDER_FREE.md",
+      "bytes": 5927,
+      "sha256": "ea9742b851689a1765bf9f88a610ae878c6ce14a41ed07d31ab5aff2469c93b3"
+    },
+    {
       "path": "CHANGELOG.md",
-      "bytes": 1487,
-      "sha256": "d97c9b899e2e8d6a74ada6c881ab9bb0b2d15534a0481747c5e8b558fdc56a7b"
+      "bytes": 2682,
+      "sha256": "8db1f651aeee990e4c59aed0e6f0202a94f821fc72a95db334f641e7962e90a9"
     },
     {
       "path": "Dockerfile",
       "bytes": 1041,
       "sha256": "e43197960c5e75fcbb4ccd194f390d624abc4fec12d88a055191b01aa4458a2a"
+    },
+    {
+      "path": "FREE_EDITION_RENDER_SETUP.md",
+      "bytes": 4885,
+      "sha256": "2e048e889b075a41a7de76c2739f8097c5eb259b95400a11b8fea51394c1176a"
     },
     {
       "path": "LICENSE",
@@ -46,8 +61,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 8479,
-      "sha256": "f666064c580d068edf948b045b51580c398d9c861d17fba74ee81b9395649925"
+      "bytes": 10390,
+      "sha256": "d1adb1a573819d85f4ae062285fcb8ff7a4fff918716d0f13f36946c153ddd1b"
     },
     {
       "path": "UPSTREAM_INTEGRATIONS-v1.md",
@@ -61,8 +76,13 @@
     },
     {
       "path": "VALIDATION.txt",
-      "bytes": 1596,
-      "sha256": "f4d49045ca73e4857ebb51f9b6c7cdaf9e2be42768499e07e3dd44aeadcb886e"
+      "bytes": 2080,
+      "sha256": "06967b3f0bce9c9d6ff7e0707e6684c0b28c3a9916634e2b29b1ae8c600e859e"
+    },
+    {
+      "path": "WEB_TERMINAL_AND_FIREBASE.md",
+      "bytes": 5217,
+      "sha256": "6d3bb2ce8fd7100fcec913fbfe2bced3d1c464cb3b141e50d64c893eff583096"
     },
     {
       "path": "admin_console/admin.css",
@@ -136,8 +156,13 @@
     },
     {
       "path": "database.py",
-      "bytes": 12413,
-      "sha256": "d5066095ffac8d363513b7bd87cb4e121b127efca436ed0aee857340567cffa1"
+      "bytes": 12903,
+      "sha256": "bb95e7cee81cd7c437f4cd59e9d9f311be95703c8456eaeec57033d58a010794"
+    },
+    {
+      "path": "firebase_files.py",
+      "bytes": 7802,
+      "sha256": "e5cc0762490d7bcaaef39b531c7ca24c97b7b060358e781add3643f76739420f"
     },
     {
       "path": "frontend/README.md",
@@ -211,8 +236,8 @@
     },
     {
       "path": "main.py",
-      "bytes": 101400,
-      "sha256": "799d722ede287a33c6d0532a2509e5a04a1e6ddec16634428955ea81d1461f94"
+      "bytes": 117271,
+      "sha256": "b0d2748634f69da71e40f904dbea4eb919d41d59d274a7b7e9cceea952c72d00"
     },
     {
       "path": "mcp/README.md",
@@ -281,8 +306,8 @@
     },
     {
       "path": "render.yaml",
-      "bytes": 1750,
-      "sha256": "7a2442c5cfba229caf8f15f1452f1e3d5d73a96fe8d1c561cfcfbfe4b3b08f0d"
+      "bytes": 3097,
+      "sha256": "fe1cdd620e1152d21f2fd6b8d27a13a7868d5871a4c7477ce7264cf0b6568506"
     },
     {
       "path": "reports/BUILD_VALIDATION.md",
@@ -311,8 +336,8 @@
     },
     {
       "path": "requirements-lite.txt",
-      "bytes": 287,
-      "sha256": "bd03037928e199676fdb86d8449ada922f853578ee3c810160adf1b781c76f8e"
+      "bytes": 385,
+      "sha256": "b3a8641a1e7ee625553f29403d9dd8ae934a00c55b78ed89db24a4f40a76614c"
     },
     {
       "path": "requirements-mobile.txt",
@@ -321,8 +346,8 @@
     },
     {
       "path": "requirements.txt",
-      "bytes": 287,
-      "sha256": "bd03037928e199676fdb86d8449ada922f853578ee3c810160adf1b781c76f8e"
+      "bytes": 312,
+      "sha256": "684e7ba821bedb201576195b3c6d5bd20cf5c96946c6edc5bf96de00da97f8cc"
     },
     {
       "path": "reverse-engineering/README.md",
@@ -366,8 +391,8 @@
     },
     {
       "path": "static/app.js",
-      "bytes": 49733,
-      "sha256": "fabf82745b4fc3148ca0318cc80323dac70968f22608b1565c7f696bec1652c5"
+      "bytes": 54281,
+      "sha256": "07d49ca153d0a9124ea59dde16881b3fb6664906ce74b0ec8f479ddea82f61d2"
     },
     {
       "path": "static/assets/logo-demo.mp4",
@@ -411,23 +436,23 @@
     },
     {
       "path": "static/builder.css",
-      "bytes": 12476,
-      "sha256": "ff9eb3e0fafd463e06e695ac6009cda2c612f955117992426c276774cec2006e"
+      "bytes": 12867,
+      "sha256": "59c54b9936d63fe6addd4c1c07fb05d57fc2fc3bb1558b026fecd54c1ba1df9a"
     },
     {
       "path": "static/builder.html",
-      "bytes": 5952,
-      "sha256": "1c8c3fb5d3d2b2caaa934383a364b0d30e30757cffb98c19b95561db5bf80d8a"
+      "bytes": 5983,
+      "sha256": "5329c0c33d1592bbe7af66d3153e1ee372af1f2aeb95868e2ffaec04c1280921"
     },
     {
       "path": "static/builder.js",
-      "bytes": 8454,
-      "sha256": "cbef672b75f146a8e36cfcd03dbe2384ea95ad5edbd527af84fb45c1ea1ee818"
+      "bytes": 10425,
+      "sha256": "37c73d4fb2e04b92a5d7a4473f8a41b8267aeadb05686b2d374ffe8616dafc50"
     },
     {
       "path": "static/index.html",
-      "bytes": 22777,
-      "sha256": "874b1c8fe7f030454e48edf2716e32c0d3c875d352f0ce646a36f6b4c54834d5"
+      "bytes": 26746,
+      "sha256": "176480988baa807162eb9b605a95533214103aa6980a73b5b7b4ad87e4db3280"
     },
     {
       "path": "static/landing.css",
@@ -466,8 +491,8 @@
     },
     {
       "path": "static/styles.css",
-      "bytes": 42533,
-      "sha256": "6e10078db525584a9e70b5c35b808f56475947b6775d014b61cc19dc42e2e601"
+      "bytes": 47148,
+      "sha256": "6480a52d19c098c2a85d651a26613fbcb1dcf834c565de9301a4ddd843d31616"
     },
     {
       "path": "static/terms.html",
@@ -491,8 +516,8 @@
     },
     {
       "path": "tests/test_hybrid_features.py",
-      "bytes": 7966,
-      "sha256": "47f20176d4063b437574ef8b9071ee79db7e892d6712fca6605949f6111c0a44"
+      "bytes": 7979,
+      "sha256": "a93fe389ed7a3bb81cb628f4859bbf1f15fbcb53d2f2fc876081f20551908b63"
     },
     {
       "path": "tests/test_providers_and_runtime.py",
@@ -501,8 +526,8 @@
     },
     {
       "path": "tests/test_universal.py",
-      "bytes": 15789,
-      "sha256": "ee1010685ca868a8794e26b5f12ef1567f5577a257d581b9b6924eabd5629d6c"
+      "bytes": 22635,
+      "sha256": "5c3d9a979410978010ec34ae87d0a99939d0772c4d0e1a90b53b8cc55bf3a75f"
     },
     {
       "path": "uploaded_files/.gitkeep",

@@ -1,4 +1,4 @@
-# MADX Hybrid AI Studio v18
+# MADX Hybrid AI Studio v18.1.0
 
 A deployable FastAPI + static frontend workspace for explicit single-provider AI calls, multi-step project planning, safe ZIP packaging, private administration, and non-executing reverse-engineering reviews.
 
@@ -8,8 +8,8 @@ A deployable FastAPI + static frontend workspace for explicit single-provider AI
 - **Project Foundry** at `/builder`: prompt → planner JSON → task assignments → explicit worker calls → file/path validation → downloadable ZIP. Each worker task records its selected route, prompt, status and error. An incomplete run is never reported as a complete ZIP.
 - **Reverse Audit** at `/reverse`: static ZIP/APK/AAB/JAR inventory, URL/dependency extraction, Android permission-string inspection, suspicious-pattern heuristics and path traversal checks. The archive is not extracted to disk or executed.
 - **Owner console** at `/admin?token=YOUR_ADMIN_ACCESS_TOKEN`: the query token is exchanged for a short-lived signed, HttpOnly cookie and the server redirects to a clean URL. Admin assets and APIs require the admin cookie. Runtime diagnostics and terminal functions do not appear in the user UI.
-- **Restricted hosted terminal**: only an allowlist of status commands is accepted; no arbitrary shell, shell operators, sudo or secret-file reads. Full Kali is a separate local-only container under `security-lab/` and is not exposed as a web shell.
-- **Database**: SQLAlchemy models for users, projects, task records and audit events. Local development falls back to SQLite. Configure `DATABASE_URL` to use PostgreSQL in hosted deployments. ZIP archives are stored as database blobs when using persistent DB storage. Google subject IDs scope signed-in users; anonymous browser sessions receive separate HttpOnly IDs, and a shared API token is not treated as a tenant identity.
+- **Restricted hosted terminal** at `/terminal`: an allowlist of workspace and runtime status commands, provider catalog refresh, Ollama diagnostics and storage status. No arbitrary shell, shell operators, `sudo` or secret-file reads. Full Kali is a separate local-only container under `security-lab/` and is not exposed as a web shell.
+- **Database and artifacts**: SQLAlchemy models for users, projects, task records and audit events. Local development falls back to SQLite. Configure `DATABASE_URL` to use PostgreSQL in hosted deployments. By default ZIP archives are database blobs; when Firebase is configured, generated ZIP bytes and uploads use Firebase Storage, with project/task metadata and the private artifact reference retained in the application database. Google subject IDs scope signed-in users; anonymous browser sessions receive separate HttpOnly IDs, and a shared API token is not treated as a tenant identity.
 - **Official/provider-approved API adapters**: direct HTTP/API integrations and user-operated compatible endpoints only. No browser-session scraper, unofficial GPT4Free/G4F wrapper, or silently substituted provider is bundled in the production runtime.
 - **MADX identity**: the user-facing chat gets an application system instruction so the assistant identifies the workspace as MADX without claiming to be the official model provider.
 - **Emerald / metallic green / gold liquid UI**: responsive glass UI, animated 3D orb, reduced-motion handling and mobile layouts.
@@ -100,3 +100,15 @@ python -m compileall -q .
 ```
 
 Tests use mock provider calls; a green test suite does not mean your API keys, provider quotas, OAuth application, or Render deployment have been externally verified.
+
+## Free Edition deployment profile
+
+For the selected Render-free configuration (hybrid hosted free-tier models + optional user-owned Ollama, Google sign-in, temporary storage, single selected model, no fallback), see [`FREE_EDITION_RENDER_SETUP.md`](FREE_EDITION_RENDER_SETUP.md) and `.env.free.example`. `render.yaml` enables `MADX_FREE_EDITION=true` and `MADX_DISABLE_FALLBACK=true` by default. Provider keys and Google OAuth client ID must be supplied by the operator in Render's Environment settings; no credentials are bundled.
+
+## v18.1.0: Web Terminal, single-route Auto resolution, and Firebase file storage
+
+- `GET /terminal` adds the hosted allow-list command console; arbitrary shell commands, `sudo`, and shell operators are not supported.
+- The Agent Lab now selects one real configured model route. Auto is resolved once before task execution; the selected route is not swapped after failure.
+- Unreachable Ollama presets are no longer treated as a ready local model in the task selector.
+- Optional Firebase Storage + Firestore persistence for uploaded files and generated project ZIPs is enabled by `FIREBASE_SERVICE_ACCOUNT_JSON` plus `FIREBASE_STORAGE_BUCKET`. Project/task metadata and the storage reference still require a persistent `DATABASE_URL` to survive Render restarts; without Firebase, uploads use temporary local storage and generated ZIP bytes are stored in the app database.
+- See `WEB_TERMINAL_AND_FIREBASE.md` for setup and limits.

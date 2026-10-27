@@ -18,7 +18,7 @@ def _client(monkeypatch):
 
 def test_hybrid_pages_security_headers_docs_and_diagnostics_hidden(monkeypatch):
     client = _client(monkeypatch)
-    for path in ("/", "/chat", "/agents", "/studio", "/files", "/settings"):
+    for path in ("/", "/chat", "/agents", "/terminal", "/studio", "/files", "/settings"):
         response = client.get(path)
         assert response.status_code == 200
         assert "MAD X" in response.text
@@ -149,7 +149,7 @@ def test_v18_landing_assets_and_robots_are_served(monkeypatch):
     assert client.get("/auth").status_code == 200
     assert client.get("/builder").status_code == 200
     assert client.get("/reverse").status_code == 200
-    assert client.get("/health").json()["version"] == "18.0.0"
+    assert client.get("/health").json()["version"] == "18.1.0"
 
 
 def test_gateway_adapters_require_both_url_and_key(monkeypatch):

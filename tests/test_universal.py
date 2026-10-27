@@ -325,3 +325,149 @@ def test_storage_owners_are_not_shared_by_the_common_api_token():
     )
     assert main._owner_subject(request_a) != main._owner_subject(request_b)
     assert main._upload_owner(request_a) != main._upload_owner(request_b)
+
+
+def test_task_pipeline_resolves_auto_once_to_one_route(monkeypatch):
+    client = TestClient(main.app)
+    monkeypatch.delenv("API_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("REQUIRE_LOGIN", "false")
+    monkeypatch.setenv("MADX_FREE_EDITION", "true")
+    monkeypatch.setenv("MADX_DISABLE_FALLBACK", "true")
+    route = "Gemini API|gemini-2.5-flash"
+    resolver_calls = {"count": 0}
+
+    async def fake_resolve():
+        resolver_calls["count"] += 1
+        return route
+
+    async def fake_catalog(refresh=False):
+        return {"rows": [{"id": route, "provider": "Gemini API", "model": "gemini-2.5-flash",
+                          "type": "text", "route_kind": "official_api", "auth_configured": True,
+                          "free_tier": True, "verified_by": "official-model-preset"}]}
+
+    async def fake_generate(requested, messages, temperature, max_tokens):
+        assert requested == route
+        return "mock output", "gemini-2.5-flash", "Gemini API", []
+
+    monkeypatch.setattr(main, "_resolve_auto_route", fake_resolve)
+    monkeypatch.setattr(main, "get_catalog", fake_catalog)
+    monkeypatch.setattr(main, "_generate_chat", fake_generate)
+    response = client.post("/v1/tasks/run", json={"task": "Build and test a simple secure API endpoint.", "routes": ["auto"],
+                                                     "fallback_route": None, "temperature": 0.2, "max_tokens": 300})
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert resolver_calls["count"] == 1
+    assert payload["model_route"] == route
+    assert payload["fallbacks_used"] == 0
+    assert all(agent["route"] == route and not agent["fallback_used"] for agent in payload["agents"])
+    assert "No alternate model was tried" in payload["note"]
+
+
+def test_project_builder_auto_resolves_once_and_free_build_uses_one_route(monkeypatch):
+    monkeypatch.setenv("REQUIRE_LOGIN", "false")
+    monkeypatch.setenv("MADX_FREE_EDITION", "true")
+    monkeypatch.setenv("MADX_DISABLE_FALLBACK", "true")
+    route = "Gemini API|gemini-2.5-flash"
+    resolver_calls = {"count": 0}
+    calls = []
+
+    async def fake_resolve():
+        resolver_calls["count"] += 1
+        return route
+
+    async def fake_catalog(refresh=False):
+        return {"rows": [{"id": route, "provider": "Gemini API", "model": "gemini-2.5-flash",
+                          "type": "text", "route_kind": "official_api", "auth_configured": True,
+                          "free_tier": True, "verified_by": "official-model-preset"}]}
+
+    async def fake_generate(requested, messages, temperature, max_tokens):
+        calls.append(requested)
+        assert requested == route
+        system = str(messages[0].get("content", ""))
+        if system.startswith("You plan software deliverables"):
+            return json.dumps({"project_name": "One Route Test", "summary": "single model build", "tasks": [{
+                "title": "Write page", "role": "Frontend", "files": ["index.html"],
+                "prompt": "Create a complete small static HTML page for the requested demo."
+            }]}), "gemini-2.5-flash", "Gemini API", []
+        return json.dumps({"files": [{"path": "index.html", "content": "<!doctype html><h1>OK</h1>"}], "notes": "done"}), "gemini-2.5-flash", "Gemini API", []
+
+    monkeypatch.setattr(main, "_resolve_auto_route", fake_resolve)
+    monkeypatch.setattr(main, "get_catalog", fake_catalog)
+    monkeypatch.setattr(main, "_generate_chat", fake_generate)
+    client = TestClient(main.app, base_url="https://testserver")
+    client.get("/")
+    response = client.post("/api/projects/build", json={
+        "project_name": "One Route Test", "prompt": "Build a tiny website with a homepage and instructions.",
+        "planner_model": "auto", "worker_models": ["auto"], "max_tasks": 1, "worker_max_tokens": 1200,
+    })
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["status"] == "completed"
+    assert payload["model_route"] == route
+    assert resolver_calls["count"] == 1
+    assert calls and set(calls) == {route}
+
+
+def test_project_builder_rejects_two_models_in_free_edition_before_creating_project(monkeypatch):
+    monkeypatch.setenv("REQUIRE_LOGIN", "false")
+    monkeypatch.setenv("MADX_FREE_EDITION", "true")
+    client = TestClient(main.app)
+    response = client.post("/api/projects/build", json={
+        "project_name": "Must Reject", "prompt": "Create a small website and tests for it.",
+        "planner_model": "Gemini API|gemini-2.5-flash",
+        "worker_models": ["DeepSeek API|deepseek-chat"], "max_tasks": 1, "worker_max_tokens": 1200,
+    })
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert detail["error"] == "single_model_only"
+
+
+def test_firebase_project_zip_storage_reference_is_private_and_validated(monkeypatch):
+    import firebase_files
+
+    class FakeBlob:
+        def __init__(self, name):
+            self.name = name
+            self.metadata = {}
+            self.data = b""
+        def upload_from_string(self, data, content_type=None):
+            self.data = bytes(data)
+            self.content_type = content_type
+        def download_as_bytes(self):
+            return self.data
+        def delete(self):
+            self.deleted = True
+
+    class FakeBucket:
+        def __init__(self):
+            self.objects = {}
+        def blob(self, name):
+            if name not in self.objects:
+                self.objects[name] = FakeBlob(name)
+            return self.objects[name]
+
+    bucket = FakeBucket()
+    monkeypatch.setattr(firebase_files, "_clients", lambda: (None, bucket, None))
+    ref = firebase_files.upload_project_artifact("google:owner-secret", "project-123", b"zip bytes")
+    assert ref.startswith("firebase://madx-project-artifacts/")
+    assert "google:owner-secret" not in ref
+    assert firebase_files.download_project_artifact(ref) == b"zip bytes"
+    with pytest.raises(RuntimeError):
+        firebase_files.download_project_artifact("firebase://public/../outside.zip")
+
+
+def test_web_terminal_and_firebase_status_are_wired(monkeypatch):
+    monkeypatch.delenv("API_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("REQUIRE_LOGIN", "false")
+    client = TestClient(main.app)
+    page = client.get("/terminal")
+    assert page.status_code == 200
+    assert 'id="page-terminal"' in page.text
+    status = client.get("/api/storage/status")
+    assert status.status_code == 200
+    assert status.json()["backend"] in {"local_ephemeral", "firebase"}
+    result = client.post("/api/terminal/execute", json={"command": "help"})
+    assert result.status_code == 200, result.text
+    assert "providers refresh" in result.json()["stdout"]
+    blocked = client.post("/api/terminal/execute", json={"command": "echo hello"})
+    assert blocked.status_code == 403

@@ -9,3 +9,6 @@ google-auth>=2.34.0
 cryptography>=42.0.0
 SQLAlchemy>=2.0.35,<3
 psycopg[binary]>=3.2.3,<4
+
+# Optional Firebase Storage + Firestore persistence for uploaded files.
+firebase-admin>=6.5.0,<8

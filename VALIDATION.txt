@@ -1,19 +1,20 @@
-MADX Hybrid AI Studio v18.0.0 — validation record (27 October 2026)
+MADX Hybrid Studio v18.1.0 — validation record (27 October 2026)
 
 PASS in build sandbox:
-- Offline pytest suite (76 tests, mocked provider endpoints).
-- Python import/compile smoke checks.
-- Public page/admin access checks, admin cookie exchange and terminal allowlist checks.
+- Offline pytest suite: 84 tests passed, including Auto resolution, one-model Project Foundry policy, Firebase project artifact reference safety, terminal allowlist, and API routing tests.
+- Python compile/import checks for the main API, database, Firebase storage adapter, provider catalog and project builder.
+- JavaScript syntax checks across bundled frontend and admin-console scripts.
+- Public page/admin access checks, admin cookie exchange, and hosted terminal command restrictions.
 - Direct model-route validation and explicit no-fallback error behavior.
-- Project file path/size/duplicate validation, ZIP package creation, and non-executing archive review.
-- JavaScript parse checks for all bundled browser scripts.
-- ZIP/archive contents and generated checksums are verified during release packaging.
+- Project file path/size/duplicate validation, ZIP packaging and non-executing archive review.
+- ZIP archive integrity and generated source checksums are verified during release packaging.
 
 NOT VERIFIED without owner configuration or external services:
 - No live AI provider calls; API-key validity, quotas, model access and latency depend on the configured provider/account.
+- Firebase Storage/Firestore was mocked in tests only; service-account, bucket, Firestore/IAM permission and real upload/download still need testing in the owner’s Firebase project.
 - Google OAuth requires the owner’s client ID, allowed origins and Fernet session key; browser login was not completed against a real account.
-- Render was not deployed from this environment; set environment variables, use a persistent database/storage plan and test the hosted URL.
+- Render was not deployed from this environment; set environment variables, configure a persistent `DATABASE_URL` for project metadata, and test the hosted URL.
 - Docker/Kali image was not run from this validation workflow; it remains a separate local lab and is not a public web shell.
 - Android wrapper sources are retained but no signed APK was produced.
 
-Before production: set independent random API_ACCESS_TOKEN and ADMIN_ACCESS_TOKEN values, configure SESSION_ENCRYPTION_KEY and Google OAuth origins, add provider keys only through the host secret manager, configure a persistent database, enable HTTPS/Cookie Secure, and verify authorization before scanning target systems.
+Before production: set independent random API_ACCESS_TOKEN and ADMIN_ACCESS_TOKEN values, configure SESSION_ENCRYPTION_KEY and Google OAuth origins, add provider keys only through the host secret manager, configure Firebase Storage if desired, configure a persistent database, enable HTTPS/Cookie Secure, and verify authorization before scanning target systems.

@@ -25,6 +25,7 @@
       <nav class="side-nav" aria-label="Main navigation">
         <a class="nav-link active" href="/chat" data-page-link="chat"><span class="nav-icon">◈</span><span>Chat</span><span class="nav-pill" id="chat-nav-pill">LIVE</span></a>
         <a class="nav-link" href="/agents" data-page-link="agents"><span class="nav-icon">⟡</span><span>Agent Lab</span><span class="nav-count">6</span></a>
+        <a class="nav-link" href="/terminal" data-page-link="terminal"><span class="nav-icon">⌘</span><span>Web Terminal</span><span class="nav-pill">CLI</span></a>
         <a class="nav-link" href="/studio" data-page-link="studio"><span class="nav-icon">◌</span><span>Media Studio</span></a>
         <a class="nav-link" href="/files" data-page-link="files"><span class="nav-icon">▤</span><span>My Files</span><span class="nav-count" id="files-count">0</span></a>
       </nav>
@@ -102,18 +103,45 @@
       </section>
 
       <section class="page" id="page-agents" data-page="agents">
-        <div class="page-intro"><div><div class="section-eyebrow">ORCHESTRATION / 06 AGENTS</div><h1>Agent <span>Lab</span></h1><p>Your prompt is professionalized, distributed to specialists, then integrated into one final result.</p></div><div class="intro-ornament"><span>⑥</span><i></i></div></div>
+        <div class="page-intro"><div><div class="section-eyebrow">ORCHESTRATION / 06 TASK ROLES</div><h1>Agent <span>Lab</span></h1><p>Your prompt is professionalized, split into six roles, and integrated using one selected model in Free Edition.</p></div><div class="intro-ornament"><span>⑥</span><i></i></div></div>
         <div class="agent-flow"><div class="flow-node"><small>01</small><b>Prompt Engineer</b><span>Professional brief</span></div><span class="flow-arrow">→</span><div class="flow-node"><small>02</small><b>Task Distributor</b><span>Scope & role split</span></div><span class="flow-arrow">→</span><div class="flow-node flow-node-final"><small>03—06</small><b>Specialist team</b><span>Build · Research · Review · Test · Integrate</span></div></div>
         <div class="agent-workspace">
           <div class="panel panel-main"><div class="panel-heading"><div><span class="section-eyebrow">TASK BLUEPRINT</span><h2>What are we solving?</h2></div><span class="chip chip-gold">PROMPT → TASKS</span></div>
             <label class="form-label" for="task-prompt">YOUR TASK</label><textarea class="field-input big-input" id="task-prompt" rows="5" placeholder="Describe the outcome, requirements, constraints and what success looks like…"></textarea>
-            <div class="field-columns"><div><label class="form-label" for="task-routes">PRIMARY ROUTES <small>(select up to 6)</small></label><select class="field-input route-select" id="task-routes" multiple size="6" aria-label="Choose up to six primary model routes"></select><small class="field-help">Agent slots use the selected route list round-robin. Select free-ready routes first.</small></div><div><label class="form-label" for="fallback-route">TASK FALLBACK ROUTE</label><select class="field-input" id="fallback-route"><option value="">Auto-pick free-first backup</option></select><div class="fallback-card"><span class="fallback-icon">↯</span><span><b>One retry per failed agent</b><small>Free/local first; an optional configured API-key backup is used only when no distinct free route is ready. Normal chat never switches models.</small></span></div></div></div>
+            <div class="field-columns"><div><label class="form-label" for="task-routes">ONE MODEL ROUTE</label><select class="field-input route-select" id="task-routes" size="1" aria-label="Choose one configured model route"></select><small class="field-help">All six task roles use this exact model. Auto resolves once before execution. If it fails, no alternate model is tried.</small></div><div class="single-model-note"><span class="fallback-icon">✓</span><span><b>Single-model execution</b><small>Hidden fallbacks and paid routes are disabled. Configure a provider in Render Environment or connect a reachable Ollama server.</small></span></div></div>
             <div class="field-columns compact-fields"><div><label class="form-label" for="task-temperature">CREATIVITY</label><select class="field-input" id="task-temperature"><option value="0.2">Precise · 0.2</option><option value="0.35" selected>Balanced · 0.35</option><option value="0.7">Creative · 0.7</option></select></div><div><label class="form-label" for="task-tokens">OUTPUT SIZE</label><select class="field-input" id="task-tokens"><option value="500">Compact</option><option value="900" selected>Standard</option><option value="1600">Detailed</option></select></div></div>
             <button class="button button-primary run-team" id="run-team"><span>⟡</span> Run six-agent pipeline <span class="button-arrow">↗</span></button><div class="status-line" id="agent-status" role="status" aria-live="polite"></div>
           </div>
           <div class="panel team-panel"><div class="panel-heading"><div><span class="section-eyebrow">SPECIALIST ROSTER</span><h2>Six minds. One outcome.</h2></div><span class="live-dot-label"><i></i> READY TO ASSIGN</span></div><div class="team-list"><div class="team-member"><span class="member-index">01</span><span class="member-glyph glyph-a">⌘</span><span class="member-copy"><b>Architect</b><small>Structure & dependencies</small></span><span class="member-state">PLAN</span></div><div class="team-member"><span class="member-index">02</span><span class="member-glyph glyph-b">{ }</span><span class="member-copy"><b>Builder</b><small>Implementation & code</small></span><span class="member-state">BUILD</span></div><div class="team-member"><span class="member-index">03</span><span class="member-glyph glyph-c">⌕</span><span class="member-copy"><b>Researcher</b><small>Compatibility & evidence</small></span><span class="member-state">VERIFY</span></div><div class="team-member"><span class="member-index">04</span><span class="member-glyph glyph-d">⌑</span><span class="member-copy"><b>Security reviewer</b><small>Threats & safeguards</small></span><span class="member-state">SECURE</span></div><div class="team-member"><span class="member-index">05</span><span class="member-glyph glyph-e">✓</span><span class="member-copy"><b>Tester</b><small>Edge cases & acceptance</small></span><span class="member-state">TEST</span></div><div class="team-member"><span class="member-index">06</span><span class="member-glyph glyph-f">✦</span><span class="member-copy"><b>Integrator</b><small>One coherent final answer</small></span><span class="member-state">MERGE</span></div></div><div class="team-footnote">Free providers may rate-limit or go offline. Each fallback is reported; it is never hidden from the result.</div></div>
         </div>
         <div class="agent-results" id="agent-results"></div>
+      </section>
+
+      <section class="page" id="page-terminal" data-page="terminal">
+        <div class="page-intro"><div><div class="section-eyebrow">RUNTIME / CONNECTORS / SAFE COMMANDS</div><h1>Web <span>Terminal</span></h1><p>Inspect the Render runtime, check configured adapters, and verify storage from the same MADX workspace.</p></div><div class="intro-ornament terminal-ornament"><span>⌘</span><i></i></div></div>
+        <div class="terminal-grid">
+          <div class="panel terminal-main">
+            <div class="panel-heading"><div><span class="section-eyebrow">MADX CONSOLE</span><h2>Command runner</h2><p class="heading-subtitle">Allow-listed commands only · no root shell · no arbitrary script execution</p></div><span class="chip chip-green" id="terminal-runtime-chip">READY TO CHECK</span></div>
+            <div class="terminal-chrome"><span class="terminal-dot terminal-dot-red"></span><span class="terminal-dot terminal-dot-yellow"></span><span class="terminal-dot terminal-dot-green"></span><span class="terminal-title">madx@render:~</span><button type="button" class="terminal-clear" id="terminal-clear">Clear output</button></div>
+            <div class="terminal-output" id="terminal-output" role="log" aria-live="polite" aria-relevant="additions text"><div class="terminal-line terminal-muted">MADX Web Terminal · hosted runtime</div><div class="terminal-line terminal-muted">Type <b>help</b> to see commands. Use AI Chat for model generation and Agent Lab for task execution.</div></div>
+            <form class="terminal-input-row" id="terminal-form"><label for="terminal-input" aria-label="Terminal prompt">❯</label><input id="terminal-input" type="text" autocomplete="off" spellcheck="false" maxlength="300" placeholder="help" aria-label="Command"/><button class="button button-primary" id="terminal-run" type="submit">Run ↗</button></form>
+            <div class="terminal-status" id="terminal-status" role="status"></div>
+          </div>
+          <aside class="panel terminal-side"><div class="panel-heading"><div><span class="section-eyebrow">QUICK COMMANDS</span><h2>Runtime tools</h2></div><span class="chip chip-gold">SAFE MODE</span></div>
+            <div class="terminal-command-list">
+              <button type="button" data-terminal-command="status"><span>Runtime status</span><code>status</code></button>
+              <button type="button" data-terminal-command="providers"><span>Provider readiness</span><code>providers</code></button>
+              <button type="button" data-terminal-command="providers refresh"><span>Refresh adapter catalog</span><code>providers refresh</code></button>
+              <button type="button" data-terminal-command="models"><span>List text model routes</span><code>models</code></button>
+              <button type="button" data-terminal-command="ollama status"><span>Check Ollama reachability</span><code>ollama status</code></button>
+              <button type="button" data-terminal-command="storage status"><span>Check file storage</span><code>storage status</code></button>
+              <button type="button" data-terminal-command="df -h"><span>Disk usage</span><code>df -h</code></button>
+              <button type="button" data-terminal-command="git status"><span>Repository status</span><code>git status</code></button>
+            </div>
+            <div class="terminal-warning"><span>ⓘ</span><p><b>Important</b><br>Render runs commands inside its own container. It cannot see your phone or PC's Termux/Ollama at <code>127.0.0.1</code>. A local model needs an explicitly configured reachable server.</p></div>
+            <div class="terminal-storage-card"><div><span class="section-eyebrow">FILE STORAGE</span><b id="terminal-storage-name">Checking storage…</b><small id="terminal-storage-note">Firebase is optional and configured server-side.</small></div><button type="button" class="button button-quiet" id="terminal-storage-refresh">Refresh</button></div>
+          </aside>
+        </div>
       </section>
 
       <section class="page" id="page-studio" data-page="studio">

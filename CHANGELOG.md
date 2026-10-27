@@ -1,5 +1,14 @@
 # Changelog
 
+## v18.1.0 — Web Terminal, Firebase artifacts, and single-route Auto (2026-10-27)
+
+- Added `/terminal` with command history, safe output rendering, runtime/provider/Ollama/storage checks and a strict command allowlist; no arbitrary shell execution is exposed.
+- Fixed the task pipeline so `auto` is resolved to one concrete provider route before model validation/execution. The frontend no longer lists the Auto catalog row as a provider or marks unverified Ollama presets as ready.
+- Locked Free Edition Project Foundry planning and all worker packages to one route. A mismatched planner/worker model selection now fails preflight with `single_model_only`; Auto is resolved once before a build starts.
+- Added optional Firebase Storage for uploaded files and generated project ZIPs, Firestore upload metadata, explicit storage errors, and instructions for persistent database configuration.
+- Updated Render environment templates, UI, setup docs and regression tests.
+- Validation: 84 offline tests pass; Python compile checks and JavaScript syntax checks pass. Live provider keys, Firebase IAM/storage permissions, OAuth and Render deployment were not verified from this build environment.
+
 ## v18.0.0 — MADX Hybrid Studio (2026-10-27)
 
 - Added SQLAlchemy persistence for users, projects, project task records and audit events; SQLite is the local fallback and PostgreSQL is selected via `DATABASE_URL`.
