@@ -1,10 +1,11 @@
-# Android Termux is more suitable than Pydroid. Install Chromium with: pkg install chromium
-# Browser-based g4f providers may still be unsupported on Android; the official free-tier routes work.
+# Android / Termux development dependencies. Use official API keys and endpoints only.
 fastapi>=0.115.0,<1
 uvicorn>=0.30.0,<1
 pydantic>=2.8.0,<3
 requests>=2.32.0,<3
+httpx>=0.27.0,<1
 certifi>=2024.8.30
 google-auth>=2.34.0
 cryptography>=42.0.0
-g4f[all]>=0.6.0,<9
+SQLAlchemy>=2.0.35,<3
+psycopg[binary]>=3.2.3,<4

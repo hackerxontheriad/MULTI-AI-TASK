@@ -10,7 +10,7 @@ TOKEN = os.getenv("API_ACCESS_TOKEN", "").strip()
 
 
 def fetch(path):
-    req = urllib.request.Request(BASE + path, headers={"User-Agent": "MadEx-Smoke-Test/1.0"})
+    req = urllib.request.Request(BASE + path, headers={"User-Agent": "MADX-Smoke-Test/18.0"})
     if TOKEN:
         req.add_header("Authorization", "Bearer " + TOKEN)
     with urllib.request.urlopen(req, timeout=20) as response:
@@ -19,7 +19,7 @@ def fetch(path):
 
 def main():
     failed = False
-    for path in ("/", "/health", "/v1/status", "/v1/catalog", "/v1/models", "/docs"):
+    for path in ("/", "/health", "/auth", "/builder", "/reverse", "/v1/status", "/v1/catalog", "/v1/models", "/docs"):
         try:
             status, body = fetch(path)
             if status != 200:
@@ -27,10 +27,10 @@ def main():
             print(f"PASS {path}: HTTP {status} ({len(body)} bytes)")
             if path == "/health":
                 parsed = json.loads(body)
-                print(f"  g4f_installed={parsed.get('g4f_installed')} chromium_found={parsed.get('chromium_found')}")
+                print(f"  version={parsed.get('version')} adapter_mode={parsed.get('provider_adapters')}")
             if path == "/v1/catalog":
                 parsed = json.loads(body)
-                print(f"  source={parsed.get('source')}, rows={len(parsed.get('rows', []))}, counts={parsed.get('counts')}")
+                print(f"  source={parsed.get('source')}, rows={len(parsed.get('rows', []))}")
         except Exception as exc:
             failed = True
             print(f"FAIL {path}: {type(exc).__name__}: {exc}")

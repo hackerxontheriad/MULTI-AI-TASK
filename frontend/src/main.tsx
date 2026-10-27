@@ -20,7 +20,7 @@ function Landing() {
     <header className="tsx-nav">
       <a className="tsx-brand" href="/"><span className="tsx-logos"><img src="/static/assets/mad-x-logo.svg" alt="MAD X current logo" /><img src="/static/assets/logo-mark.svg" alt="MAD X original logo" /></span><span><b>MAD<span>X</span></b><small>HYBRID AI STUDIO</small></span></a>
       <button className="tsx-menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(v => !v)}>{menuOpen ? '×' : '☰'}</button>
-      <nav className={menuOpen ? 'tsx-links open' : 'tsx-links'}><a href="#features" onClick={() => setMenuOpen(false)}>Features</a><a href="#auth" onClick={() => setMenuOpen(false)}>Security</a><a href="/diagnostics">Diagnostics</a><a className="tsx-cta" href="/chat">Open workspace ↗</a></nav>
+      <nav className={menuOpen ? 'tsx-links open' : 'tsx-links'}><a href="#features" onClick={() => setMenuOpen(false)}>Features</a><a href="#auth" onClick={() => setMenuOpen(false)}>Security</a><a href="/builder">Project Builder</a><a className="tsx-cta" href="/chat">Open workspace ↗</a></nav>
     </header>
     <main>
       <section className="tsx-hero">
@@ -29,9 +29,9 @@ function Landing() {
       </section>
       <section className="tsx-features" id="features"><div className="tsx-section-title"><small>01 / STUDIO</small><h2>Powerful tools.<br /><em>Transparent status.</em></h2></div><div className="tsx-grid">{features.map(f => <article className="tsx-card" key={f.id}><span>{f.id}</span><h3>{f.title}</h3><p>{f.body}</p><small>{f.meta}</small></article>)}</div></section>
       <section className="tsx-film"><video src="/static/assets/logo-demo.mp4" poster="/static/assets/mad-x-icon.png" muted loop playsInline controls preload="metadata" /><div><small>BRAND FILM / PRESERVED ASSET</small><h2>Both logos.<br /><em>One MAD X.</em></h2><p>The original SVG and the refreshed logo remain in the project.</p></div></section>
-      <section className="tsx-auth" id="auth"><div><small>02 / SECURITY</small><h2>TSX is a build format.<br /><em>Not a security boundary.</em></h2><p>Browser source can still be inspected. The protection comes from backend verification, session tokens, scoped file access, rate limiting and keeping provider credentials out of client code.</p></div><a className="tsx-primary" href="/diagnostics">Check connectors ↗</a></section>
+      <section className="tsx-auth" id="auth"><div><small>02 / SECURITY</small><h2>TSX is a build format.<br /><em>Not a security boundary.</em></h2><p>Browser source can still be inspected. The protection comes from backend verification, session tokens, scoped file access, rate limiting and keeping provider credentials out of client code.</p></div><a className="tsx-primary" href="/builder">Open project builder ↗</a></section>
     </main>
-    <footer className="tsx-footer"><span>MAD<span>X</span> · HYBRID AI STUDIO v17.0.0</span><div><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/chat">Workspace</a></div></footer>
+    <footer className="tsx-footer"><span>MAD<span>X</span> · HYBRID AI STUDIO v18.0.0</span><div><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/chat">Workspace</a></div></footer>
   </div>;
 }
 

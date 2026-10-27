@@ -1,23 +1,18 @@
 services:
   - type: web
-    name: mad-x-hybrid-studio
+    name: madx-hybrid-studio
     runtime: docker
     plan: free
     healthCheckPath: /health
-    # Free plans have 512 MB RAM: skip Chromium/g4f and use the free-tier API routes (Groq, Cerebras,
-    # Mistral, Gemini, GitHub Models, Hugging Face, Cloudflare, Pollinations). Docker build args come from
-    # env vars. On a paid plan set INSTALL_BROWSER=1 and REQUIREMENTS_FILE=requirements.txt for g4f.
     envVars:
-      - key: INSTALL_BROWSER
-        value: "0"
-      - key: REQUIREMENTS_FILE
-        value: requirements-lite.txt
       - key: API_ACCESS_TOKEN
         sync: false
+      - key: ADMIN_ACCESS_TOKEN
+        sync: false
+      - key: ADMIN_SESSION_HOURS
+        value: "8"
       - key: REQUIRE_LOGIN
         value: "true"
-      - key: DIAGNOSTICS_PASSWORD
-        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: ALLOWED_LOGIN_EMAILS
@@ -30,12 +25,28 @@ services:
         value: "30"
       - key: COOKIE_SECURE
         value: "true"
-      - key: FREE_FALLBACK_MODEL
+      - key: DATABASE_URL
         sync: false
+      - key: MADX_FREE_EDITION
+        value: "true"
+      - key: MADX_DISABLE_FALLBACK
+        value: "true"
+      - key: FREE_FALLBACK_MODEL
+        value: ""
       - key: PAID_FALLBACK_MODEL
+        value: ""
+      - key: MADX_DATA_DIR
+        value: "/tmp/madx-data"
+      - key: MADX_DEFAULT_MODEL
         sync: false
       - key: MAX_UPLOAD_MB
         value: "25"
+      - key: PROVIDER_REQUEST_TIMEOUT
+        value: "60"
+      - key: RATE_LIMIT_PER_MIN
+        value: "30"
+      - key: TRUST_PROXY
+        value: "1"
       - key: GROQ_API_KEY
         sync: false
       - key: CEREBRAS_API_KEY
@@ -54,51 +65,53 @@ services:
         sync: false
       - key: POLLINATIONS_API_KEY
         sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: XAI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: PERPLEXITY_API_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        value: ""
+      - key: OLLAMA_API_KEY
+        sync: false
       - key: LITELLM_BASE_URL
         sync: false
       - key: LITELLM_API_KEY
         sync: false
       - key: LITELLM_MODELS
-        sync: false
-      - key: PAWANOSMAN_BASE_URL
-        sync: false
-      - key: PAWANOSMAN_API_KEY
-        sync: false
-      - key: PAWANOSMAN_MODELS
-        sync: false
+        value: ""
       - key: OMNIROUTE_BASE_URL
         sync: false
       - key: OMNIROUTE_API_KEY
         sync: false
       - key: OMNIROUTE_MODELS
+        value: ""
+      - key: PAWANOSMAN_BASE_URL
         sync: false
+      - key: PAWANOSMAN_API_KEY
+        sync: false
+      - key: PAWANOSMAN_MODELS
+        value: "default"
       - key: NINE_ROUTER_BASE_URL
         sync: false
       - key: NINE_ROUTER_API_KEY
         sync: false
       - key: NINE_ROUTER_MODELS
-        sync: false
+        value: "default"
       - key: NEW_API_BASE_URL
         sync: false
       - key: NEW_API_API_KEY
         sync: false
       - key: NEW_API_MODELS
-        sync: false
+        value: "default"
       - key: ONE_API_BASE_URL
         sync: false
       - key: ONE_API_API_KEY
         sync: false
       - key: ONE_API_MODELS
-        sync: false
-      - key: OLLAMA_BASE_URL
-        value: http://127.0.0.1:11434
-      - key: OLLAMA_API_KEY
-        sync: false
-      - key: G4F_REQUEST_TIMEOUT
-        value: "60"
-      - key: CATALOG_TTL_SECONDS
-        value: "900"
-      - key: RATE_LIMIT_PER_MIN
-        value: "30"
-      - key: TRUST_PROXY
-        value: "1"
+        value: "default"

@@ -7,7 +7,7 @@
     "Third-party repositories are linked as integration targets, not copied wholesale.",
     "Review each repository's current license before copying source code.",
     "A free framework does not make cloud compute, GPU inference, or hosted API quotas unlimited.",
-    "Browser code and TSX are not secret: authorization, rate limits, and provider credentials must be enforced server-side."
+    "No unofficial browser-session wrappers or cookie-sharing adapters are shipped in the production runtime."
   ],
   "integrations": [
     {
@@ -123,13 +123,6 @@
       "notes": "Reference list only, not executable integration."
     },
     {
-      "name": "g4f",
-      "url": "https://github.com/xtekky/gpt4free",
-      "category": "community model wrappers",
-      "status": "native_experimental",
-      "notes": "Optional dependency; browser-based providers can fail or violate upstream terms. No guarantee of unlimited free access."
-    },
-    {
       "name": "Open Interpreter",
       "url": "https://github.com/KillianLucas/open-interpreter",
       "category": "local code/terminal agent",
@@ -237,14 +230,6 @@
       "status": "external_reference",
       "license": "MIT (per repository README)",
       "notes": "Separate React/Vite + Express/TypeScript project; the README describes Gemini plus a reasoning API key. Search/API keys and separate deployment are required; it is not automatically merged as a backend dependency."
-    },
-    {
-      "name": "Free-GPT4-WEB-API",
-      "url": "https://github.com/aledipa/Free-GPT4-WEB-API",
-      "category": "community API server",
-      "status": "optional_isolated_external",
-      "license": "GPL-3.0 (per repository page)",
-      "notes": "Separate Flask/g4f server with a provider-switching design and optional cookie settings. Must be hosted and secured separately; community routes can fail and are not a guaranteed unlimited free model. Do not pass private cookies or credentials into it."
     },
     {
       "name": "OmniRoute",

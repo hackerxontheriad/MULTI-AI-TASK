@@ -13,3 +13,6 @@ uploaded_files/*
 !uploaded_files/.gitkeep
 *.log
 .DS_Store
+
+/data/*
+!/data/.gitkeep

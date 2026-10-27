@@ -224,7 +224,7 @@ def test_provider_http_errors_map_to_clear_statuses(monkeypatch):
 
     monkeypatch.setattr(main, "_run_official_thread", raise_401)
     with pytest.raises(HTTPException) as info:
-        run(main._generate_chat("Groq API|x", [{"role": "user", "content": "x"}], 0.5, 50))
+        run(main._generate_chat("Groq API|llama-3.3-70b-versatile", [{"role": "user", "content": "x"}], 0.5, 50))
     assert info.value.status_code == 424 and info.value.detail["error"] == "provider_auth_failed"
 
 
@@ -241,25 +241,11 @@ def test_secret_never_leaks_through_generic_errors(monkeypatch):
     assert info.value.detail["hint"]
 
 
-def test_g4f_busy_returns_503_instead_of_queueing(monkeypatch):
-    monkeypatch.setattr(main, "_g4f_active", main.G4F_MAX_WORKERS)
+def test_legacy_community_route_is_rejected_not_executed():
     with pytest.raises(HTTPException) as info:
-        run(main._generate_chat("g4f:Gemini|gemini-2.5-flash", [{"role": "user", "content": "x"}], 0.5, 50))
-    assert info.value.status_code == 503
-    assert info.value.detail["error"] == "g4f_workers_busy"
-
-
-def test_g4f_slot_is_released_after_success_and_failure(monkeypatch):
-    monkeypatch.setattr(main, "_g4f_active", 0)
-    assert run(main._run_g4f_thread(lambda: "ok", timeout=5)) == "ok"
-    assert main._g4f_active == 0
-
-    def fail():
-        raise RuntimeError("x")
-
-    with pytest.raises(RuntimeError):
-        run(main._run_g4f_thread(fail, timeout=5))
-    assert main._g4f_active == 0
+        run(main._generate_chat("g4f:Gemini|gemini-3.8-flash", [{"role": "user", "content": "x"}], 0.5, 50))
+    assert info.value.status_code == 410
+    assert info.value.detail["error"] == "unofficial_adapter_removed"
 
 
 def test_official_image_route_saves_a_real_file(monkeypatch, tmp_path):
@@ -267,7 +253,7 @@ def test_official_image_route_saves_a_real_file(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "call_official_image", lambda *a, **k: (PNG, "png"))
     req = main.ImageRequest(prompt="a cat", model="Pollinations API|flux")
     body = run(main.image_generate(req, None))
-    assert body["provider_mode"] == "official-api"
+    assert body["provider_mode"] == "supported-api"
     url = body["data"][0]["url"]
     assert url.startswith("/media/img-") and (tmp_path / url.split("/")[-1]).read_bytes() == PNG
 
@@ -295,11 +281,12 @@ def test_rate_limiter_blocks_after_limit(monkeypatch):
     assert info.value.status_code == 429 and "Retry-After" in info.value.headers
 
 
-def test_failed_catalog_fetch_is_retried_sooner(monkeypatch):
-    monkeypatch.setattr(main, "_fetch_catalog_sync", lambda: ([], None, "offline"))
+def test_catalog_refresh_includes_auto_route_without_external_model_fetch(monkeypatch):
+    monkeypatch.setattr(main, "get_runtime_provider_catalog", lambda: [])
     main._cache.update({"at": 0, "rows": [], "source": None, "error": None})
     result = run(main.get_catalog(refresh=True))
-    assert result["ttl"] <= 60
+    assert result["rows"][0]["id"] == "auto|auto"
+    assert result["ttl"] > 0
 
 
 # ------------------------------------ chromium ------------------------------------ #
@@ -374,10 +361,9 @@ def test_compatible_proxy_requires_explicit_url_and_key(monkeypatch):
     assert {r["model"] for r in rows} == {"team/model-a", "team/model-b"}
 
 
-def test_shared_chrome_error_has_actionable_hint():
+def test_removed_browser_adapter_error_does_not_recommend_browser_setup():
     exc = RuntimeError("Failed to start shared Chrome on port 33857; dbus/bus.cc")
-    hint = http_client.explain_exception(exc)
-    assert hint and "server-side Chrome" in hint and "/v1/diagnostics" in hint
+    assert http_client.explain_exception(exc) is None
 
 
 def test_litellm_proxy_uses_explicit_base_url_and_selected_model(monkeypatch):

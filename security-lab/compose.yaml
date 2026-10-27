@@ -1,0 +1,21 @@
+services:
+  kali-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: madx-kali-lab:local
+    container_name: madx-kali-lab
+    stdin_open: true
+    tty: true
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [NET_RAW]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+      - /run:rw,nosuid,nodev,size=32m
+    volumes:
+      - ./work:/work:rw
+    working_dir: /work
+    restart: "no"

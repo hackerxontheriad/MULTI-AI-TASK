@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071b14"><meta name="description" content="MADX project planner and ZIP builder">
+<title>MADX · Project Foundry</title><link rel="icon" href="/static/assets/mad-x-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/builder.css"><script src="/static/builder.js" defer></script>
+</head>
+<body>
+<div class="ambient"><i></i><i></i><i></i></div>
+<header class="topbar"><a class="brand" href="/"><img src="/static/assets/mad-x-logo.svg" alt="MADX"><span>MAD<span>X</span><small>PROJECT FOUNDRY</small></span></a><nav><a href="/chat">Workspace</a><a class="active" href="/builder">Project Builder</a><a href="/reverse">Reverse Audit</a></nav><span class="status"><b></b> ROUTE-LOCKED</span></header>
+<main class="shell">
+<section class="hero"><div><p class="eyebrow">PROMPT → PLAN → WORKERS → PACKAGE</p><h1>Make something<br><em>real.</em></h1><p class="lede">One request becomes a validated task plan, explicit model assignments, complete files and a downloadable ZIP. Failed workers stay visible; incomplete projects are never marked complete.</p><div class="hero-tags"><span>◆ Single-route calls</span><span>◆ Path-safe ZIPs</span><span>◆ Task-level audit</span></div></div><div class="orb-wrap" aria-hidden="true"><div class="orb"><div class="orb-core"></div><b>MX</b></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="orb-tag">BUILD / 01</span></div></section>
+<section class="layout">
+<form class="glass panel" id="build-form">
+<div class="section-head"><div><p class="eyebrow">01 / PROJECT DEFINITION</p><h2>Tell MADX what to build</h2></div><span class="step">INPUT</span></div>
+<label for="project-name">Project name</label><input id="project-name" maxlength="100" value="Cafe QR Menu" required>
+<label for="prompt">Full build request</label><textarea id="prompt" minlength="8" maxlength="12000" rows="7" required placeholder="Create a responsive static café menu website with category filters, a camera-based QR scanner, sample menu data, accessibility, SEO metadata, README and deployment instructions."></textarea>
+<div class="twocol"><div><label for="planner">Planner model</label><select id="planner"><option value="auto">Auto · one configured route</option></select><small>Planner output is reviewed for structure before workers run.</small></div><div><label for="max-tasks">Work packages</label><select id="max-tasks"><option value="2">2 packages</option><option value="3">3 packages</option><option value="4" selected>4 packages</option><option value="5">5 packages</option><option value="6">6 packages</option></select><small>More packages can mean more provider calls.</small></div></div>
+<div class="section-head inner-head"><div><p class="eyebrow">02 / ROUTE ASSIGNMENT</p><h2>Worker models</h2></div><button type="button" class="subtle" id="refresh-models">↻ Refresh</button></div>
+<p class="muted">Select one or more configured text routes. Workers are assigned these routes round-robin; a failed selected route is not silently replaced.</p><div id="models" class="model-grid"><div class="empty">Loading supported model routes…</div></div>
+<label for="worker-tokens">Maximum output tokens per worker</label><select id="worker-tokens"><option value="1200">1,200 · lighter</option><option value="2200" selected>2,200 · balanced</option><option value="3500">3,500 · larger code files</option><option value="4500">4,500 · high</option></select>
+<div class="action-row"><button class="primary" type="submit" id="build-button"><span>Build project ZIP</span><b>↗</b></button><a class="secondary" href="/">Back to workspace</a></div><p class="fineprint">Never paste secrets into prompts. Generated files are path-validated and zipped, but are not automatically executed. Review before deployment.</p>
+</form>
+<aside class="sidecol"><div class="glass panel status-panel"><div class="section-head"><div><p class="eyebrow">LIVE PIPELINE</p><h2>Build telemetry</h2></div><span class="pulse" id="pulse"></span></div><div id="build-status" class="status-message">Ready when you are.</div><div class="pipeline"><div class="pipe-step" id="step-plan"><span>01</span><div><b>Planner</b><small>Requirements & file manifest</small></div><i>WAITING</i></div><div class="pipe-step" id="step-workers"><span>02</span><div><b>Assigned workers</b><small>Independent, explicit routes</small></div><i>WAITING</i></div><div class="pipe-step" id="step-validate"><span>03</span><div><b>Validate output</b><small>Path and size guardrails</small></div><i>WAITING</i></div><div class="pipe-step" id="step-zip"><span>04</span><div><b>Package ZIP</b><small>Persisted project artifact</small></div><i>WAITING</i></div></div><div class="divider"></div><div class="stats"><div><small>Workers</small><b id="stat-workers">—</b></div><div><small>Files</small><b id="stat-files">—</b></div><div><small>ZIP size</small><b id="stat-size">—</b></div></div></div>
+<div class="glass panel result-panel"><div class="section-head"><div><p class="eyebrow">BUILD REPORT</p><h2>Result</h2></div><span class="step">OUTPUT</span></div><div id="result" class="result-body"><div class="empty-state"><div class="mini-orb">MX</div><b>Your project appears here</b><p>Model assignments, full work prompts, worker results and the ZIP download are shown here after the run.</p></div></div></div>
+<div class="glass panel shortcuts"><p class="eyebrow">QUICK COMMANDS</p><code>/help</code><code>/status</code><code>/plan build a QR menu website</code><p>Slash commands are also available through the authenticated API at <code>/api/commands</code>.</p></div>
+</aside></section>
+<footer><span>MADX HYBRID STUDIO · PROJECT FOUNDRY</span><span>Emerald system / metallic precision / gold accents</span></footer>
+</main>
+</body></html>

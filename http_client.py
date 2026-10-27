@@ -130,20 +130,8 @@ def explain_exception(exc: BaseException) -> Optional[str]:
         return "Provider accepted the connection but did not answer in time. Try again or pick a faster model."
     if isinstance(exc, requests.exceptions.ConnectionError) or "connection refused" in text or "connection reset" in text:
         return "Could not connect to the provider (connection refused/reset). Check network egress and base URL."
-    if "chrome" in text and any(term in text for term in (
-        "not found", "no such file", "executable", "failed to connect to browser",
-        "failed to start shared chrome", "shared chrome", "remote debugging port",
-    )):
-        return ("The selected community provider could not start/connect to its server-side Chrome session. "
-                "Check GET /v1/diagnostics, Chromium executable/version, headless/container flags, writable profile/temp "
-                "directory, free RAM, and whether the provider supports this host. A DBus socket warning can be incidental; "
-                "the full Chrome launch error is needed to identify the root cause. Official API routes do not need Chromium.")
-    if "dbus/bus.cc" in text or "system_bus_socket" in text:
-        return ("Chromium logged a DBus socket warning in the server/container. This warning alone may be non-fatal; "
-                "check the later Chrome exit/connection error, headless flags, writable profile, dependencies, and RAM. "
-                "Use a direct API provider if the community browser provider requires a desktop session.")
-    if "missingrequirementserror" in text or "nodriver" in text or "selenium" in text:
-        return "This community adapter needs browser extras: pip install -U 'g4f[all]' and a working Chromium (see /v1/diagnostics)."
+    if "missingautherror" in text or ("login" in text and "required" in text) or ("api key" in text and "missing" in text):
+        return "This provider needs a server-side API key or authorized endpoint configuration. Use a supported provider route."
     if "missingautherror" in text or ("login" in text and "required" in text) or ("api key" in text and "missing" in text):
         return "This adapter needs a login/cookie/API key; it cannot run anonymously. Use an official free-tier API route instead."
     if "rate limit" in text or "429" in text or "too many requests" in text:
@@ -172,7 +160,7 @@ def _session() -> requests.Session:
     if session is None:
         configure_ca_bundle()
         session = requests.Session()
-        session.headers.update({"User-Agent": "MadEx-AI-Hub/15.1"})
+        session.headers.update({"User-Agent": "MADX-Hybrid-AI-Studio/18.0"})
         adapter = requests.adapters.HTTPAdapter(pool_connections=8, pool_maxsize=16, max_retries=0)
         session.mount("https://", adapter)
         session.mount("http://", adapter)

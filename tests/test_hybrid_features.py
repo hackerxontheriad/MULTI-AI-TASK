@@ -91,14 +91,15 @@ def test_six_agent_pipeline_uses_explicit_free_fallback_and_reports_it(monkeypat
     assert all(agent["fallback_used"] for agent in data["agents"])
 
 
-def test_diagnostics_require_separate_password(monkeypatch):
+def test_diagnostics_require_admin_session(monkeypatch):
     client = _client(monkeypatch)
-    monkeypatch.setenv("DIAGNOSTICS_PASSWORD", "very-different-test-password")
-    assert client.get("/v1/diagnostics", params={"probe": "false"}).status_code == 404
-    response = client.get("/v1/diagnostics", params={"probe": "false"}, headers={
-        "X-Diagnostics-Password": "very-different-test-password"
-    })
-    assert response.status_code == 200, response.text
+    monkeypatch.setenv("ADMIN_ACCESS_TOKEN", "D" * 48)
+    monkeypatch.setattr(main, "COOKIE_SECURE", False)
+    response = client.get("/v1/diagnostics", params={"probe": "false"})
+    assert response.status_code == 404
+    unlocked = client.get("/admin", params={"token": "D" * 48}, follow_redirects=False)
+    assert unlocked.status_code in (302, 303)
+    assert client.get("/api/admin/diagnostics").status_code == 200
 
 
 def test_public_health_is_minimal_and_catalog_requires_login(monkeypatch):
@@ -131,7 +132,7 @@ def test_ported_task_planner_returns_a_non_execution_plan(monkeypatch):
     assert "does not call a model" in data["note"]
 
 
-def test_v17_landing_assets_and_robots_are_served(monkeypatch):
+def test_v18_landing_assets_and_robots_are_served(monkeypatch):
     client = _client(monkeypatch)
     landing = client.get("/")
     assert landing.status_code == 200
@@ -144,9 +145,11 @@ def test_v17_landing_assets_and_robots_are_served(monkeypatch):
     assert robots.status_code == 200
     assert "Disallow: /api/" in robots.text
     diagnostics = client.get("/diagnostics")
-    assert diagnostics.status_code == 200
-    assert "Connector" in diagnostics.text or "connector" in diagnostics.text
-    assert client.get("/health").json()["version"] == "17.0.0"
+    assert diagnostics.status_code == 404
+    assert client.get("/auth").status_code == 200
+    assert client.get("/builder").status_code == 200
+    assert client.get("/reverse").status_code == 200
+    assert client.get("/health").json()["version"] == "18.0.0"
 
 
 def test_gateway_adapters_require_both_url_and_key(monkeypatch):

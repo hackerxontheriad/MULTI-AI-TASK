@@ -186,4 +186,4 @@ def test_endpoint_rejects_router_aliases_and_bad_plans():
     assert info.value.status_code == 400
     with pytest.raises(HTTPException) as info:
         run(main.agents_run(main.AgentRequest(mode="council", prompt="x", routes=["A|a", "B|b"]), None))
-    assert info.value.status_code == 400 and info.value.detail["error"] == "invalid_agent_request"
+    assert info.value.status_code == 400 and info.value.detail["error"] == "unsupported_provider_route"

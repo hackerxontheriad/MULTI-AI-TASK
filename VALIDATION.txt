@@ -1,17 +1,19 @@
-MAD X Hybrid AI Studio v16.1.0 — validation record (26 October 2026)
+MADX Hybrid AI Studio v18.0.0 — validation record (27 October 2026)
 
-PASS (run in the build sandbox)
-- Python syntax/bytecode compilation: main.py, agents.py, agent_router.py, provider_catalog.py, runtime_env.py, http_client.py.
-- Offline pytest suite: 74 passed, including hybrid feature tests for page routes/security headers, protected diagnostics, minimal public health, catalog authorization, task planning, six-agent fallback flow and arbitrary binary file upload/download/list/delete.
-- Frontend JavaScript syntax: `node --check static/app.js`.
-- Archive integrity and expected-file/security-exclusion checks are run when the release ZIP is created.
+PASS in build sandbox:
+- Offline pytest suite (76 tests, mocked provider endpoints).
+- Python import/compile smoke checks.
+- Public page/admin access checks, admin cookie exchange and terminal allowlist checks.
+- Direct model-route validation and explicit no-fallback error behavior.
+- Project file path/size/duplicate validation, ZIP package creation, and non-executing archive review.
+- JavaScript parse checks for all bundled browser scripts.
+- ZIP/archive contents and generated checksums are verified during release packaging.
 
-NOT VERIFIED (requires external services or separate build environment)
-- No live model/provider API calls were made; actual model availability, free-tier limits, quota and latency depend on provider status and configured credentials.
-- Google OAuth requires a real Google OAuth client ID, authorized redirect URIs and a secure deployment secret; end-to-end OAuth was not verified.
-- Docker image build and Render deployment were not run. Deployment settings are templates/placeholders and must be configured before production.
-- Local/browser playback of MP4 is supported, but generating new videos requires a compatible configured provider; fully free hosted video generation is not guaranteed.
-- Arbitrary files can be stored/downloaded, but unsupported binary files are not automatically understood by every AI model; only supported small text/code files are attached as prompt context.
-- GitHub projects in `integrations/registry.json` are documented as compatible references/optional integrations; the package does not claim to vendor every external repository.
+NOT VERIFIED without owner configuration or external services:
+- No live AI provider calls; API-key validity, quotas, model access and latency depend on the configured provider/account.
+- Google OAuth requires the owner’s client ID, allowed origins and Fernet session key; browser login was not completed against a real account.
+- Render was not deployed from this environment; set environment variables, use a persistent database/storage plan and test the hosted URL.
+- Docker/Kali image was not run from this validation workflow; it remains a separate local lab and is not a public web shell.
+- Android wrapper sources are retained but no signed APK was produced.
 
-Recommended pre-production checklist: set a long random API_ACCESS_TOKEN, DIAGNOSTICS_PASSWORD and SESSION_ENCRYPTION_KEY; configure GOOGLE_CLIENT_ID and provider credentials; verify HTTPS/cookie settings and OAuth callback URLs; set upload storage/retention limits; review each optional upstream project's license and security before deployment.
+Before production: set independent random API_ACCESS_TOKEN and ADMIN_ACCESS_TOKEN values, configure SESSION_ENCRYPTION_KEY and Google OAuth origins, add provider keys only through the host secret manager, configure a persistent database, enable HTTPS/Cookie Secure, and verify authorization before scanning target systems.

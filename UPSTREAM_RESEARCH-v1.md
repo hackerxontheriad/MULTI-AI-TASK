@@ -1,30 +1,21 @@
-# Upstream provider and agent research (v15.3)
+# MADX v18 provider and workflow notes
 
-This file records the public integration references reviewed for this release. It is not a claim that every upstream service was live-tested from this build environment.
+This file is a status note, not a claim that every external provider has been live-tested. No source code is fetched from the projects mentioned by name, and no browser-session wrapper is part of the supported runtime.
 
-## Provider adapters
+## Provider adapter policy
 
-- **GPT4Free / g4f** — https://github.com/xtekky/gpt4free and https://g4f.dev/docs/ . Optional community adapter; upstream providers can be unstable, require sessions/browser support, and may change frequently. Catalog entries are explicitly marked experimental.
-- **PawanOsman ChatGPT API** — https://github.com/PawanOsman/ChatGPT . Supports an OpenAI-compatible API; the upstream README documents `https://api.pawan.krd/v1` for its hosted service and describes obtaining access. We expose it as an opt-in credentialed route and also preserve custom self-hosted endpoint configuration.
-- **LiteLLM** — https://docs.litellm.ai/docs/ . Exposed as a user-configured LiteLLM Proxy route. LiteLLM normalizes providers; it does not guarantee that a configured upstream is free.
-- **Hugging Face Inference Providers** — https://huggingface.co/docs/inference-providers/index . Uses the documented OpenAI-compatible `https://router.huggingface.co/v1` chat endpoint with a server-side token. The free tier currently advertises small monthly credits; this is not unlimited inference.
-- **Ollama** — https://github.com/ollama/ollama/blob/main/docs/api/introduction.mdx . Uses the documented local `/api/chat` API, with live discovery of installed models.
-- **NVIDIA NIM** — https://docs.api.nvidia.com/nim/reference/llm-apis and https://docs.api.nvidia.com/nim/reference/openai-gpt-oss-20b-infer . Uses NVIDIA's OpenAI-compatible `/v1/chat/completions` endpoint; developer-program access is for prototyping and model/quotas can vary.
-- **OpenRouter Free** — https://openrouter.ai/collections/free-models . Exposed only through the named adapter. Live model discovery filters for zero-priced prompt and completion metadata (or an explicit `:free` suffix); provider availability and quotas can change.
-- **DuckDuckGo AI Chat** — no stable, documented public chat-completion endpoint is included here. We do not scrape private browser endpoints, bypass bot checks, or pretend that web search is an AI generation provider.
+Use documented provider APIs or an endpoint the operator owns/is authorized to use. Provider keys stay in server environment variables. A configured key or free-tier label does not guarantee model access, credits, regional availability, or uptime. Every explicit generation request targets one provider/model; the system records the failed route instead of silently substituting another provider. `auto` resolves once to a single configured route and does not retry a different model after an error.
 
-The existing direct adapters for Groq, Cerebras, Mistral, Gemini, GitHub Models, Cloudflare Workers AI, Pollinations, OpenAI, Anthropic, xAI, Meta, DeepSeek and Perplexity remain in `provider_catalog.py`.
+## Hosted and local connectors
 
-## Agent orchestration patterns reviewed
+- Direct adapters in `provider_catalog.py` cover a curated catalog of APIs including OpenAI, Gemini, Anthropic, xAI, Meta, DeepSeek, Perplexity, Groq, Cerebras, Mistral, GitHub Models, Hugging Face, Cloudflare Workers AI, Pollinations and Ollama. Verify the provider's current model catalogue before relying on a preset identifier.
+- OpenAI-compatible connectors (such as a privately-operated LiteLLM or gateway deployment) require a controlled base URL, server-side key and an explicit model list. The connector does not make that service free.
+- Video generation remains unconfigured until a supported provider API adapter is installed and its credentials/entitlements are supplied. Google Flow web UI sessions are not scraped or impersonated.
 
-- **LangGraph** — https://github.com/langchain-ai/langgraph (resilient graph-style agent orchestration).
-- **AgentScope** — https://github.com/agentscope-ai/agentscope (observable agent workflows).
-- **AG2 / AutoGen** — https://github.com/ag2ai/ag2 (multi-agent coordination).
-- **Google ADK Python** — https://github.com/google/adk-python (code-first agent framework).
+## Engineering choices
 
-The shipped implementation in `agents.py` remains a small native orchestration layer (compare, council/review, and planner/workers/synthesiser) so this lightweight API can run without pulling in several large, overlapping frameworks. The patterns are adapted, not wholesale-vendored code; consult upstream repositories and their licenses before integrating any code from them. The orchestration enforces route selection, call budgets, parallelism caps and untrusted-peer-text handling.
+The project uses a small native task orchestrator rather than bundling several overlapping multi-agent frameworks. `Project Foundry` has a planner, task distribution, selected-model workers, output validation and deterministic ZIP packaging. Reverse Audit is static-only. Kali runs locally in a container with restricted capabilities; it is not an online shell.
 
-## Honest verification status
+## Verification status
 
-- Offline unit tests mock provider HTTP responses and browser executables; they verify request formatting, error mapping, TLS retry behavior, catalog filtering, fallback metadata and agent orchestration.
-- Unit tests do **not** prove a real account key, real quota, upstream availability, Chromium dependencies on a host, or Render deployment. Use `/v1/diagnostics` and a small live smoke test after configuring credentials.
+The test suite is offline and uses mocks; a passing test run does not establish live API access, provider quotas, OAuth app correctness, or a successful Render deployment.

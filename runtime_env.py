@@ -1,14 +1,8 @@
-"""Runtime environment setup: Chromium discovery, container-safe flags, launch probe.
+"""Runtime helpers for .env loading and small, read-only host checks.
 
-Browser-based community (g4f) adapters need a *real* Chrome/Chromium binary.
-The original code exported ``CHROME_BIN=/usr/bin/chromium`` unconditionally, which
-points at a missing file on Termux, Windows, macOS and many PaaS hosts and makes
-nodriver/selenium fail with a confusing error. This module:
-
-* finds an actual executable (env override -> wrapper -> PATH -> known paths),
-* exports CHROME_BIN/CHROMIUM_PATH only when something real was found,
-* adds the flags containers need (no-sandbox as root, small /dev/shm, headless),
-* can launch the browser once (cached) so /v1/diagnostics reports the truth.
+The production MADX app deliberately does not use browser-session adapters. This module
+keeps a small legacy browser-discovery utility for local diagnostics only; it is not
+invoked by the production startup path.
 """
 from __future__ import annotations
 

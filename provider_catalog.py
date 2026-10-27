@@ -1,8 +1,7 @@
 """Explicit provider/model catalog and single-route API adapters.
 
-Every provider here is called through its own documented HTTP API. Community
-(g4f) entries are best-effort and live in main.py. This module never falls back
-between providers/models; it only retries the *same* URL on transient errors.
+Each provider is called through its supported HTTP API or a user-operated compatible endpoint.
+This module never falls back between providers/models; it only retries the *same* URL on transient errors.
 
 Free / zero-cost routes (set the key on the server; no card needed at the time of
 writing - always re-check the provider's current terms):
@@ -285,7 +284,7 @@ STATIC_MODELS: dict[str, dict[str, Any]] = {
     },
 }
 
-# Image routes that call a real API directly (no g4f, no browser).
+# Image routes that call supported provider APIs directly.
 IMAGE_PROVIDERS: dict[str, dict[str, Any]] = {
     "Pollinations API": {
         "key_env": ("POLLINATIONS_API_KEY",),
@@ -303,29 +302,6 @@ IMAGE_PROVIDERS: dict[str, dict[str, Any]] = {
         "docs": "https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/",
     },
 }
-
-# Community adapter presets are deliberately displayed as experimental. The
-# provider adapter may not exist in an installed g4f version, may need browser
-# state, and the model ID may not be supported by that provider.
-COMMUNITY_PRESETS: list[tuple[str, str, str]] = [
-    ("Gemini", "gemini-2.5-flash", "text"),
-    ("GoogleAiMode", "gemini-2.5-flash", "text"),
-    ("GoogleSearch", "gemini-2.5-flash", "text"),
-    ("ChatGPT", "gpt-4o", "text"),
-    ("OpenaiChat", "gpt-4o", "text"),
-    ("Claude", "claude-sonnet-4-6", "text"),
-    ("Grok", "grok-4", "text"),
-    ("MetaAI", "llama", "text"),
-    ("DeepSeek", "deepseek-chat", "text"),
-    ("Perplexity", "sonar-pro", "text"),
-    ("Blackbox", "blackbox", "text"),
-    ("Copilot", "copilot", "text"),
-    ("HuggingChat", "meta-llama/Llama-3.3-70B-Instruct", "text"),
-    ("Qwen", "qwen3", "text"),
-    ("Mistral", "mistral-large-latest", "text"),
-    ("Kimi", "kimi-k2", "text"),
-]
-
 
 # --------------------------------------------------------------------------- #
 # Keys / settings
@@ -434,19 +410,6 @@ def catalog_rows() -> list[dict[str, Any]]:
                 "free_tier": bool(config.get("free_tier", False)),
                 "docs": config.get("docs"),
             })
-    for provider, model, kind in COMMUNITY_PRESETS:
-        rows.append({
-            "id": f"g4f:{provider}|{model}",
-            "provider": f"{provider} · community/experimental",
-            "route_provider": f"g4f:{provider}",
-            "model": model,
-            "type": kind,
-            "verified_by": "experimental-preset-not-live-verified",
-            "route_kind": "g4f_community",
-            "auth_required": None,
-            "auth_configured": None,
-            "availability": "unverified; provider may need session/cookies or may be offline",
-        })
     return rows
 
 
@@ -909,23 +872,4 @@ def get_runtime_provider_catalog() -> list[dict[str, Any]]:
         if row["id"] not in deduped or row.get("verified_by") == "provider-live-models-api":
             deduped[row["id"]] = row
     rows = list(deduped.values())
-    try:
-        import g4f
-
-        providers = getattr(g4f, "Provider", None)
-    except Exception:
-        providers = None
-    for row in rows:
-        if row.get("route_kind") != "g4f_community":
-            continue
-        name = row.get("route_provider", "").split(":", 1)[-1]
-        available = False
-        if providers is not None:
-            for variant in (name, name.replace("-", "_"), name.replace("_", ""), re.sub(r"[^A-Za-z0-9]", "", name)):
-                if getattr(providers, variant, None) is not None:
-                    available = True
-                    break
-        row["adapter_installed"] = available
-        if not available:
-            row["availability"] = "adapter not detected in installed g4f; request will return an error, no fallback"
     return rows

@@ -1,116 +1,106 @@
-# MAD X Hybrid AI Studio — v17.0.0
+# MADX Hybrid AI Studio v18
 
-A free-first AI workspace built from the two supplied project ZIPs. The current runtime uses the v16.1 single-route FastAPI backend, while preserving the original browser/preview materials, brand assets and legacy gateway as an isolated reference. The landing page has been redesigned with emerald/metallic-gold animation; a TSX React source version is included separately.
+A deployable FastAPI + static frontend workspace for explicit single-provider AI calls, multi-step project planning, safe ZIP packaging, private administration, and non-executing reverse-engineering reviews.
 
-## What is actually included
+## Included
 
-- **Single selected-model requests:** `POST /v1/chat/completions` calls the named provider/model route and reports errors instead of silently swapping providers. A task workflow can use explicit configured fallback routes; its results report which routes were used.
-- **Six-agent workflow:** planner, researcher, builder, reviewer, optimizer and tester. Results depend on the selected/configured routes, quotas and host resources.
-- **Chat + code tools:** assistant code blocks support Copy and Download. HTML/SVG adds Run and Preview in a sandboxed iframe. This is a browser preview, not a general Python/Java/PHP code execution engine.
-- **Files and media:** authenticated, session-scoped upload/list/download/delete endpoints; local previews for supported formats; a real MP4 asset is retained.
-- **Authentication:** server verification of Google ID tokens with `email_verified == true`, encrypted HttpOnly session cookies, API access-token mode, rate limits and separate admin diagnostics password.
-- **Connector status:** `/api/connectors/status?probe=true` (requires a verified Google session or valid bearer token) reports configuration and probes the configured OpenAI-compatible gateway `/models` endpoints. A successful probe is not a promise that text generation or quota is available.
-- **Provider adapters:** official/free-tier API adapters, local/hosted Ollama, LiteLLM/PawanOsman-compatible URLs, and configurable OmniRoute, 9Router, New-API and One-API compatible gateways.
-- **MCP setup:** OmniRoute MCP configuration example and guide are included. The OmniRoute process must run separately; the Python app does not start, provision or extend OmniRoute tokens. Current upstream installation requirements specify Node.js `>=22.22.2 <23` or `>=24 <27`; the build environment here has Node `22.16.0`, so OmniRoute itself was not installed or launched during validation. See the [upstream setup guide](https://github.com/cheaper-inference/OmniRoute/wiki/Setup-Guide) and [MCP guide](https://github.com/cheaper-inference/OmniRoute/wiki/mcp-server).
-- **Android source wrapper:** Gradle, Java, manifest and resources are included. This package contains Android source code, **not a compiled/signed APK**.
-- **Preview runner examples:** HTML, Java, PHP and Python example folders plus Dockerfiles are present.
-- **Static RE/audit utility:** `scripts/audit_project.py` inventories a folder/ZIP/APK/AAB and flags review candidates without executing archive contents.
-- **Both logos:** current `mad-x-logo.svg`, legacy `logo-mark.svg`, and both old/new icon PNG paths are preserved. The original landing page is stored as `legacy/static/landing-v1.html`.
+- **User workspace** at `/` and `/chat`: chat, configured model catalogue, agent workflows, media tools, private file upload and Google sign-in support.
+- **Project Foundry** at `/builder`: prompt → planner JSON → task assignments → explicit worker calls → file/path validation → downloadable ZIP. Each worker task records its selected route, prompt, status and error. An incomplete run is never reported as a complete ZIP.
+- **Reverse Audit** at `/reverse`: static ZIP/APK/AAB/JAR inventory, URL/dependency extraction, Android permission-string inspection, suspicious-pattern heuristics and path traversal checks. The archive is not extracted to disk or executed.
+- **Owner console** at `/admin?token=YOUR_ADMIN_ACCESS_TOKEN`: the query token is exchanged for a short-lived signed, HttpOnly cookie and the server redirects to a clean URL. Admin assets and APIs require the admin cookie. Runtime diagnostics and terminal functions do not appear in the user UI.
+- **Restricted hosted terminal**: only an allowlist of status commands is accepted; no arbitrary shell, shell operators, sudo or secret-file reads. Full Kali is a separate local-only container under `security-lab/` and is not exposed as a web shell.
+- **Database**: SQLAlchemy models for users, projects, task records and audit events. Local development falls back to SQLite. Configure `DATABASE_URL` to use PostgreSQL in hosted deployments. ZIP archives are stored as database blobs when using persistent DB storage. Google subject IDs scope signed-in users; anonymous browser sessions receive separate HttpOnly IDs, and a shared API token is not treated as a tenant identity.
+- **Official/provider-approved API adapters**: direct HTTP/API integrations and user-operated compatible endpoints only. No browser-session scraper, unofficial GPT4Free/G4F wrapper, or silently substituted provider is bundled in the production runtime.
+- **MADX identity**: the user-facing chat gets an application system instruction so the assistant identifies the workspace as MADX without claiming to be the official model provider.
+- **Emerald / metallic green / gold liquid UI**: responsive glass UI, animated 3D orb, reduced-motion handling and mobile layouts.
 
-## Start locally
+## Important architecture boundaries
+
+1. Gmail is connected through Google's official web identity flow. This project does **not** collect Gmail passwords in the terminal, store Gmail passwords, bypass multi-factor verification, copy Cloudflare challenge cookies, or use one website's session cookies to impersonate a session on another provider. Configure a Google OAuth web client and add the exact HTTPS origin to its allowed origins.
+2. Every ordinary model request selects one direct provider/model route. `auto` resolves once to a configured route before the call; a failed route is reported, not silently retried against another model. The existing explicit task-agent endpoint can report a separately configured fallback, including which route was used.
+3. “Free” means that a provider may offer a free tier/credit; quotas, regions, model access and terms vary. A provider key must be configured server-side. The UI never sends provider keys to the browser.
+4. Output files are path-validated and size-limited, but generated applications are **not executed** in the server process. Review files and run them in a separate sandbox before deployment.
+5. Static reverse-audit heuristics can produce false positives and false negatives; findings are not proof that a vulnerability exists.
+6. A URL query token may be captured by infrastructure outside this application. Open the admin URL only over HTTPS, rotate a token if exposed, and prefer a secret manager or a short-lived admin session. Uvicorn access logs are disabled in the bundled command, but platform-level proxy logging is controlled by the host.
+
+## Run locally
 
 Python 3.11+ is recommended.
 
 ```bash
 python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
 # Windows: .venv\\Scripts\\activate
-pip install -r requirements-lite.txt
+# Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Generate three independent secrets/configuration values:
+Generate independent tokens and a Fernet session key:
 
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+python -c "import secrets; print('API_ACCESS_TOKEN=', secrets.token_urlsafe(48)); print('ADMIN_ACCESS_TOKEN=', secrets.token_urlsafe(48))"
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-Set the first value as `API_ACCESS_TOKEN`, the second as `DIAGNOSTICS_PASSWORD`, and the Fernet key as `SESSION_ENCRYPTION_KEY`. Set `GOOGLE_CLIENT_ID` to a Google Cloud **Web application** OAuth client ID and add the correct public HTTPS origin to its authorized JavaScript origins. Set `PUBLIC_SITE_URL` to your canonical deployed HTTPS URL. Provider keys belong only in `.env` or your hosting provider's secret environment. On local plain HTTP only, `COOKIE_SECURE=false` may be needed for development; keep `COOKIE_SECURE=true` in public HTTPS deployment.
+Place the generated values into `.env`. Set at minimum:
+
+- `API_ACCESS_TOKEN`: app API bearer token; never reuse the admin token.
+- `ADMIN_ACCESS_TOKEN`: a random, independent token with at least 32 characters.
+- `GOOGLE_CLIENT_ID`, `SESSION_ENCRYPTION_KEY` and optionally `ALLOWED_LOGIN_EMAILS` for Google sign-in.
+- One or more provider API keys from `.env.example` for chat and project building.
+- `DATABASE_URL` for persistent PostgreSQL if you need the database to survive a host restart/redeploy.
+
+Start the server:
 
 ```bash
-uvicorn main:app --host 127.0.0.1 --port 10000
+uvicorn main:app --host 127.0.0.1 --port 10000 --reload
 ```
 
-Open `http://127.0.0.1:10000/` for the new landing page or `/chat` for the workspace. Use the token you created in the workspace Settings only for a private/owner-controlled installation; never publish that token or embed it in a public APK/frontend.
-
-## Provider configuration
-
-Free-first API options (quotas, access and terms vary):
-
-- `GEMINI_API_KEY` / `GOOGLE_API_KEY`
-- `GROQ_API_KEY`
-- `CEREBRAS_API_KEY`
-- `MISTRAL_API_KEY`
-- `GITHUB_MODELS_TOKEN`
-- `HF_TOKEN`
-- `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`
-- `POLLINATIONS_API_KEY`
-- `OLLAMA_BASE_URL` for an Ollama instance you control
-
-For compatible gateways, configure each separately:
-
-| Gateway | Required settings | Notes |
-|---|---|---|
-| OmniRoute | `OMNIROUTE_BASE_URL`, `OMNIROUTE_API_KEY`, optional `OMNIROUTE_MODELS` | Run OmniRoute separately; create an endpoint key in its dashboard. |
-| 9Router | `NINE_ROUTER_BASE_URL`, `NINE_ROUTER_API_KEY`, optional `NINE_ROUTER_MODELS` | Exact upstream repository/API URL still needs verification. |
-| New-API | `NEW_API_BASE_URL`, `NEW_API_API_KEY`, optional `NEW_API_MODELS` | Separate service, channels and account configuration required. |
-| One-API | `ONE_API_BASE_URL`, `ONE_API_API_KEY`, optional `ONE_API_MODELS` | Separate service and account setup required. |
-| LiteLLM | `LITELLM_BASE_URL`, `LITELLM_API_KEY`, optional `LITELLM_MODELS` | Authorized proxy you control. |
-| PawanOsman-compatible | `PAWANOSMAN_BASE_URL`, `PAWANOSMAN_API_KEY`, optional `PAWANOSMAN_MODELS` | Authorized OpenAI-compatible endpoint only. |
-
-Use exact model IDs returned by your own gateway's `/v1/models` or its dashboard. The starter examples are not an uptime guarantee. No endpoint/key is filled with a made-up live value.
-
-## OmniRoute MCP setup
-
-See [`mcp/README.md`](mcp/README.md) and [`mcp/omniroute.mcp.example.json`](mcp/omniroute.mcp.example.json). The MCP server is provided by the separate OmniRoute project (for example `omniroute --mcp` for a local install). Use the transport your MCP client supports and configure the right URL/key. MAD X cannot mint or extend OmniRoute account tokens automatically.
-
-## Frontend / TSX
-
-The production `/` route currently serves `static/landing.html` so the Python app works without a Node build step. The matching React/TSX source is in `frontend/src/main.tsx`; see `frontend/README.md` to build the separate TSX preview. TSX and minification do not stop reverse engineering: browser-delivered code is inspectable, so secrets must stay server-side.
-
-## External repositories and source files
-
-`integrations/registry.json` lists the user-requested projects and older ecosystem candidates with a clear status. The separate upstream projects are **not all bundled into this ZIP**. GitHub access failed in this build environment, and some projects are separate Node apps, GPU services, API gateways or have license/dependency requirements incompatible with installing wholesale into this FastAPI runtime. The safe opt-in fetcher `scripts/fetch_upstreams.py` can shallow-clone the explicitly listed repositories where you have network access; it only fetches files and does not install or execute them. Inspect the source license and dependencies before using. `9Router` still needs the exact owner/repository URL.
-
-Two ZIPs were provided in this turn; no extra 10–14 individual report attachments were available in this workspace. Previously present `UPSTREAM_RESEARCH-v1.md` and `UPSTREAM_INTEGRATIONS-v1.md` are preserved.
-
-## Reverse-engineering/static audit
-
-```bash
-python scripts/audit_project.py /path/to/project-or-archive.zip --json reports/audit.json
-```
-
-This is a heuristic static inventory tool, not a complete security guarantee. It does not run code in uploaded archives. Use it only for assets you own or are authorized to inspect.
+Open `http://127.0.0.1:10000`. The admin console is `http://127.0.0.1:10000/admin?token=YOUR_ADMIN_ACCESS_TOKEN` while testing locally with `COOKIE_SECURE=false`. Use HTTPS and `COOKIE_SECURE=true` on a public deployment.
 
 ## Render deployment
 
-`render.yaml` and the Dockerfile are retained. The default deployment selects `requirements-lite.txt` and skips Chromium to fit small hosts; community browser-backed adapters may not be available in that mode. Add the environment secrets in Render's dashboard and set `PUBLIC_SITE_URL`. If the Render service is stopped, its hosted API is not reachable; local operation is possible only when dependencies and provider endpoints are configured locally. A free plan does not mean provider inference or cloud compute is unlimited.
+See [`API_CONNECTORS_RENDER_FREE.md`](API_CONNECTORS_RENDER_FREE.md) for the free-tier limitations, all gateway environment variables, official provider key portals, and connector setup.
 
-## Android wrapper
+1. Push this project to your own Git repository and create a Render Web Service from the repository. `render.yaml` describes the Docker service and secret env vars.
+2. Set `API_ACCESS_TOKEN`, `ADMIN_ACCESS_TOKEN`, `GOOGLE_CLIENT_ID`, `SESSION_ENCRYPTION_KEY`, `PUBLIC_SITE_URL`, and at least one provider API key in the Render environment.
+3. For persistence, set `DATABASE_URL` to a managed PostgreSQL instance you intentionally selected. The default local SQLite file and uploaded-file blobs use the service filesystem; they are not durable on Render Free. Render's free web service filesystem is ephemeral, and its free PostgreSQL plan expires after 30 days, so use a suitable persistent database/storage plan for real production retention.
+4. Add the deployed HTTPS origin to Google OAuth client configuration. Keep `COOKIE_SECURE=true`.
+5. Visit `/health` to check host health; sign in and configure the model routes; test `/builder` with a small project before relying on larger builds.
+6. Admin URL form: `https://YOUR-DOMAIN/admin?token=YOUR_ADMIN_ACCESS_TOKEN`. The service exchanges the token for a short-lived HttpOnly cookie and redirects to `/admin`. Treat the query token like a password.
 
-Open `android-wrapper/` in Android Studio, configure the correct HTTPS service URL in `MainActivity.java`, then build and sign the APK with your own Android signing key. This environment has no Android SDK/Gradle installation available, so an APK has not been compiled or signed in this ZIP. Do not put provider or app access tokens into the APK.
+## Environment and provider adapters
 
-## Checks
+Provider credentials are environment variables only. The main direct adapters cover providers listed in `provider_catalog.py`; configurable OpenAI-compatible integrations are usable only when you supply an authorized endpoint and credentials. For an API not represented in the catalogue, implement and test a direct adapter in `provider_catalog.py` with a clear model ID, response validation, timeouts, error redaction and provider terms review. Do not add unofficial wrappers or use browser cookies as a substitute for a documented API.
+
+The Google Flow product is not automatically a generic video API. The `/v1/videos/generations` route reports a clear unavailable response until a supported video-provider adapter is implemented and configured; it does not fabricate a generated MP4. Image generation is available only for configured image API routes.
+
+## Slash commands
+
+The authenticated `POST /api/commands` endpoint accepts JSON. For example:
+
+```json
+{"command":"/plan","prompt":"Create a static café website with QR menu scanning","model":"auto"}
+```
+
+Available commands: `/help`, `/status`, `/plan`, `/build`, `/audit`. `/build` points to Project Foundry; `/audit` reviews an uploaded archive by file ID. Commands are API routes—not operating-system shell commands.
+
+## Local Kali security lab (separate)
+
+See `security-lab/README.md`. That disposable Kali container is for authorized local testing and static triage only. It is not needed by the hosted app and is deliberately not wired into the public web terminal.
+
+## Validation
+
+Run:
 
 ```bash
 pip install -r requirements-dev.txt
 pytest -q
-python -m py_compile main.py agents.py provider_catalog.py runtime_env.py http_client.py agent_router.py scripts/audit_project.py scripts/fetch_upstreams.py
-node --check static/app.js
-node --check static/landing.js
-node --check static/diagnostics.js
+python -m compileall -q .
 ```
 
-Source/license references are listed in [`integrations/registry.json`](integrations/registry.json). A configured or reachable route is not the same thing as verified model generation.
+Tests use mock provider calls; a green test suite does not mean your API keys, provider quotas, OAuth application, or Render deployment have been externally verified.
+
+## Free Edition deployment profile
+
+For the selected Render-free configuration (hybrid hosted free-tier models + optional user-owned Ollama, Google sign-in, temporary storage, single selected model, no fallback), see [`FREE_EDITION_RENDER_SETUP.md`](FREE_EDITION_RENDER_SETUP.md) and `.env.free.example`. `render.yaml` enables `MADX_FREE_EDITION=true` and `MADX_DISABLE_FALLBACK=true` by default. Provider keys and Google OAuth client ID must be supplied by the operator in Render's Environment settings; no credentials are bundled.

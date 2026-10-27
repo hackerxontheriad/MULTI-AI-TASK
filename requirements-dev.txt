@@ -1,4 +1,4 @@
-# Lightweight dependencies to run mocked/offline tests without installing g4f.
+# Lightweight dependencies to run mocked/offline tests for the supported direct-API runtime.
 -r requirements-lite.txt
 pytest>=8.0.0
 httpx>=0.27.0
