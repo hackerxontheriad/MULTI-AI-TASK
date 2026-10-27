@@ -27,16 +27,6 @@ services:
         value: "true"
       - key: DATABASE_URL
         sync: false
-      - key: MADX_FREE_EDITION
-        value: "true"
-      - key: MADX_DISABLE_FALLBACK
-        value: "true"
-      - key: FREE_FALLBACK_MODEL
-        value: ""
-      - key: PAID_FALLBACK_MODEL
-        value: ""
-      - key: MADX_DATA_DIR
-        value: "/tmp/madx-data"
       - key: MADX_DEFAULT_MODEL
         sync: false
       - key: MAX_UPLOAD_MB
@@ -76,7 +66,7 @@ services:
       - key: PERPLEXITY_API_KEY
         sync: false
       - key: OLLAMA_BASE_URL
-        value: ""
+        value: "http://127.0.0.1:11434"
       - key: OLLAMA_API_KEY
         sync: false
       - key: LITELLM_BASE_URL

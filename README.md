@@ -100,7 +100,3 @@ python -m compileall -q .
 ```
 
 Tests use mock provider calls; a green test suite does not mean your API keys, provider quotas, OAuth application, or Render deployment have been externally verified.
-
-## Free Edition deployment profile
-
-For the selected Render-free configuration (hybrid hosted free-tier models + optional user-owned Ollama, Google sign-in, temporary storage, single selected model, no fallback), see [`FREE_EDITION_RENDER_SETUP.md`](FREE_EDITION_RENDER_SETUP.md) and `.env.free.example`. `render.yaml` enables `MADX_FREE_EDITION=true` and `MADX_DISABLE_FALLBACK=true` by default. Provider keys and Google OAuth client ID must be supplied by the operator in Render's Environment settings; no credentials are bundled.

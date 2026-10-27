@@ -1070,9 +1070,7 @@ async def _configured_paid_fallback_route(exclude_routes: Optional[set[str]] = N
 
 
 async def _configured_fallback_route(exclude_routes: set[str]) -> Optional[str]:
-    """Resolve a fallback only when explicitly enabled; Free Edition never silently reroutes."""
-    if os.getenv("MADX_DISABLE_FALLBACK", "false").strip().lower() in {"1", "true", "yes", "on"}:
-        return None
+    """Free/local first; user-configured API-key fallback only if no distinct free route is ready."""
     return await _free_fallback_route(exclude_routes) or await _configured_paid_fallback_route(exclude_routes)
 
 
@@ -1136,27 +1134,12 @@ async def run_six_agent_task(req: TeamTaskRequest, _: None = Depends(require_acc
     """Professionalize a prompt, distribute to five specialists, and integrate as the sixth agent."""
     professional = _professional_prompt(req.task)
     routes = [r.strip() for r in req.routes if r and r.strip()][:agents.MAX_ROUTES]
-    free_edition = os.getenv("MADX_FREE_EDITION", "false").strip().lower() in {"1", "true", "yes", "on"}
-    if free_edition and len(routes) > 1:
-        raise HTTPException(status_code=400, detail={"error": "single_model_only",
-            "message": "MADX Free Edition accepts one selected model per task request. Choose one model and retry."})
     if not routes:
-        if free_edition:
-            configured = os.getenv("MADX_DEFAULT_MODEL", "").strip()
-            if not configured or configured.lower() == "auto":
-                raise HTTPException(status_code=400, detail={"error": "model_required",
-                    "message": "Select one configured model before running this task. No automatic or paid fallback is enabled."})
-            routes = [configured]
-        else:
-            free_route = await _free_fallback_route()
-            routes = [free_route or "auto"]
+        free_route = await _free_fallback_route()
+        routes = [free_route or "auto"]
     catalog_rows = (await get_catalog(refresh=False)).get("rows", [])
     for route in routes:
         _model_candidates(route, catalog_rows)
-
-    if req.fallback_route and os.getenv("MADX_DISABLE_FALLBACK", "false").strip().lower() in {"1", "true", "yes", "on"}:
-        raise HTTPException(status_code=400, detail={"error": "fallback_disabled",
-            "message": "Fallback routing is disabled in MADX Free Edition. Select a model explicitly and retry."})
 
     if req.fallback_route:
         candidate = req.fallback_route.strip()
